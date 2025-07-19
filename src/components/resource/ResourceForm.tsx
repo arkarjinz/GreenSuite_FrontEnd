@@ -1,13 +1,20 @@
 "use client";
 
 import React, { useState } from "react";
-import { Globe2,Zap, Fuel, Droplet, Trash2 } from "lucide-react";
+import { Calendar,Globe2,Zap, Fuel, Droplet, Trash2 } from "lucide-react";
 import Button from "@/components/ui/Button"; 
-
+import { calculateFootprint } from '@/lib/api/carbon';
 // Add these type definitions
+// Add these types to match your Java enums
+type ActivityType = "ELECTRICITY" | "WATER" | "WASTE" | "FUEL";
+type VolumeUnit = "LITERS" | "CUBIC_METERS"; // Add other units if needed
 type DisposalMethod = "recycled" | "landfilled" | "incinerated";
 type FuelType = "gasoline" | "diesel" | "naturalGas";
 type Region = "us" | "eu" | "asia" | "fr" | "de" | "cn" | "in";
+// Add this with your other type definitions
+type Month = 
+  | "January" | "February" | "March" | "April" | "May" | "June" 
+  | "July" | "August" | "September" | "October" | "November" | "December";
 const ResourceForm: React.FC = () => {
   const [formData, setFormData] = useState({
     electricity: "",
@@ -17,7 +24,8 @@ const ResourceForm: React.FC = () => {
     waste: "",
      disposalMethod: "recycled" as DisposalMethod, // New field
     region: "us" as Region, // Default to United States
-    });
+    month: new Date().toLocaleString('default', { month: 'long' }) as Month, // Defaults to current month
+  });
 
   const handleChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -27,13 +35,48 @@ const ResourceForm: React.FC = () => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 const handleUndo = () => {
-    setFormData({ electricity: "", water: "", fuel: "", fuelType: "gasoline",waste: "",  disposalMethod: "recycled" ,region:"us"});
+    setFormData({ electricity: "", water: "", fuel: "", fuelType: "gasoline",waste: "",  disposalMethod: "recycled" ,region:"us", month: new Date().toLocaleString('default', { month: 'long' }) as Month,});
   };
   const [showHelp, setShowHelp] = useState(false);
  const [isSubmitting, setIsSubmitting] = useState(false);
   const toggleHelp = () => {
     setShowHelp((prev) => !prev);
-  };
+  };// components/resource/ResourceForm.tsx
+
+
+const handleSubmit = async () => {
+  setIsSubmitting(true);
+
+  try {
+    // Determine activity type (simplified example)
+    const activityType = formData.electricity ? 'ELECTRICITY' : 
+                       formData.water ? 'WATER' :
+                       formData.fuel ? 'FUEL' : 'WASTE';
+
+    const result = await calculateFootprint({
+      activityType,
+      value: Number(formData[activityType.toLowerCase()]),
+      region: formData.region,
+      month: formData.month,
+      ...(activityType === 'FUEL' && { 
+        fuelType: formData.fuelType,
+        unit: 'LITERS'
+      }),
+      ...(activityType === 'WASTE' && {
+        disposalMethod: formData.disposalMethod
+      })
+    });
+
+    // Handle success (update UI instead of alert in production)
+    console.log('Calculation result:', result);
+    
+  } catch (error) {
+    console.error('API Error:', error);
+    // Use your existing error handling
+  } finally {
+    setIsSubmitting(false);
+  }
+};
 
   return (
     <div className="max-w-[900px] mx-auto p-8 font-poppins">
@@ -109,6 +152,27 @@ const handleUndo = () => {
            </p>
       </div>
       {/* ▲▲▲ REGION SELECTOR ENDS ▲▲▲ */}
+      {/* Month Selection */}
+<div className="mb-6 bg-[#43a243] p-6 rounded-[28px] transition-transform transition-shadow duration-300 hover:-translate-y-1.5 hover:shadow-lg hover:cursor-pointer">
+  <label className="flex items-center font-semibold gap-2 text-gray-900 text-lg mb-3 drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.2)]">
+    <Calendar className="text-black-700" size={24} /> {/* Add Calendar to your lucide-react imports */}
+    Reporting Month
+  </label>
+  <select
+    value={formData.month}
+    onChange={(e) => handleSelectChange("month", e.target.value as Month)}
+    className="rounded-[25px] border-4 border-[#faf6e9] outline-none px-5 py-3 text-lg w-full shadow-[inset_0_2px_4px_0_rgba(0,0,0,0.05)] hover:shadow-[inset_0_2px_8px_0_rgba(0,0,0,0.1)]"
+  >
+    {Array.from({ length: 12 }, (_, i) => {
+      const month = new Date(0, i).toLocaleString('default', { month: 'long' });
+      return (
+        <option key={month} value={month}>
+          {month}
+        </option>
+      );
+    })}
+  </select>
+</div>
       {/* Input grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
         {/* Electricity */}
@@ -177,6 +241,15 @@ const handleUndo = () => {
             <option value="diesel">Diesel</option>
             <option value="naturalGas">Natural Gas</option>
           </select>
+          {/* Inside your Fuel card */}
+<select
+  value={formData.unit || "LITERS"}
+  onChange={(e) => handleSelectChange("unit", e.target.value)}
+  className="rounded-[25px] border-4 border-[#faf6e9] outline-none px-5 py-3 text-lg mb-2"
+>
+  <option value="LITERS">Liters</option>
+  <option value="CUBIC_METERS">Cubic Meters</option>
+</select>
           <input
             type="number"
             min="0"
@@ -239,7 +312,9 @@ const handleUndo = () => {
     variant="primary"
     size="md"
     type="submit"
-    isLoading={isSubmitting} // optional: set to false if not needed
+    isLoading={isSubmitting}
+    onClick={handleSubmit} 
+    disabled={isSubmitting}// optional: set to false if not needed
   >
     Submit
   </Button>
