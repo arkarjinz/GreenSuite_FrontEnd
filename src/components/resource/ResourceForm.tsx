@@ -1,12 +1,13 @@
 "use client";
 
 import React, { useState } from "react";
-import { Zap, Fuel, Droplet, Trash2 } from "lucide-react";
+import { Globe2,Zap, Fuel, Droplet, Trash2 } from "lucide-react";
 import Button from "@/components/ui/Button"; 
 
 // Add these type definitions
 type DisposalMethod = "recycled" | "landfilled" | "incinerated";
 type FuelType = "gasoline" | "diesel" | "naturalGas";
+type Region = "us" | "eu" | "asia" | "fr" | "de" | "cn" | "in";
 const ResourceForm: React.FC = () => {
   const [formData, setFormData] = useState({
     electricity: "",
@@ -15,7 +16,8 @@ const ResourceForm: React.FC = () => {
     fuelType: "gasoline" as FuelType, // New field
     waste: "",
      disposalMethod: "recycled" as DisposalMethod, // New field
-  });
+    region: "us" as Region, // Default to United States
+    });
 
   const handleChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -25,7 +27,7 @@ const ResourceForm: React.FC = () => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 const handleUndo = () => {
-    setFormData({ electricity: "", water: "", fuel: "", fuelType: "gasoline",waste: "",  disposalMethod: "recycled" });
+    setFormData({ electricity: "", water: "", fuel: "", fuelType: "gasoline",waste: "",  disposalMethod: "recycled" ,region:"us"});
   };
   const [showHelp, setShowHelp] = useState(false);
  const [isSubmitting, setIsSubmitting] = useState(false);
@@ -37,7 +39,7 @@ const handleUndo = () => {
     <div className="max-w-[900px] mx-auto p-8 font-poppins">
       {/* Top bar */}
       <div className="flex justify-between items-center mb-8">
-        <h1 className="uppercase text-xl font-bold text-center flex-1 text-gray-900">
+        <h1 className="uppercase text-xl font-bold text-center flex-1 text-gray-900 drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.2)]">
           Enter your resource usage data
         </h1>
         <button
@@ -59,9 +61,9 @@ const handleUndo = () => {
           role="region"
           aria-live="polite"
         >
-          <p className="font-semibold mb-2">What to input:</p>
+          <p className="font-semibold mb-2 drop-shadow-[0_0.8px_0.8px_rgba(0,0,0,0.1)]">What to input:</p>
           <ul className="list-disc list-inside space-y-1 mb-2">
-            <li>
+            <li >
               <strong>Electricity:</strong> Total kWh consumed monthly (1 kWh =
               1000 Wh)
             </li>
@@ -76,12 +78,37 @@ const handleUndo = () => {
               <strong>Waste:</strong> Kilograms of solid waste produced monthly
             </li>
           </ul>
-          <p className="italic text-green-700">
+          <p className="italic text-green-700 drop-shadow-[0_0.8px_0.8px_rgba(0,0,0,0.1)]">
             Tip: Check your utility bills for monthly data.
           </p>
         </div>
       )}
-
+{/* Region Selection - New */}
+      <div className="mb-6 bg-[#43a243] p-6 rounded-[28px] transition-transform transition-shadow duration-300
+             hover:-translate-y-1.5 hover:shadow-lg hover:cursor-pointer">
+        <label className="flex items-center font-semibold gap-2 text-gray-900 text-lg mb-3 drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.2)]">
+          <Globe2 className="text-black-700" size={24} />
+          Operational Region
+        </label>
+        <select
+          value={formData.region}
+          onChange={(e) => handleSelectChange("region", e.target.value as Region)}
+          className="rounded-[25px] border-4 border-[#faf6e9] outline-none px-5 py-3 text-lg w-full shadow-[inset_0_2px_4px_0_rgba(0,0,0,0.05)]
+            hover:shadow-[inset_0_2px_8px_0_rgba(0,0,0,0.1)]"
+        >
+          <option value="us">United States (0.82 kg/kWh)</option>
+          <option value="eu">European Union (0.28 kg/kWh)</option>
+          <option value="fr">France (0.044 kg/kWh)</option>
+          <option value="de">Germany (0.37 kg/kWh)</option>
+          <option value="cn">China (0.68 kg/kWh)</option>
+          <option value="in">India (0.72 kg/kWh)</option>
+          <option value="asia">Other Asia (0.72 kg/kWh)</option>
+        </select>
+        <p className="text-sm mt-2 text-gray-700 drop-shadow-[0_0.8px_0.8px_rgba(0,0,0,0.1)]">
+          Selection impacts electricity emission calculations
+           </p>
+      </div>
+      {/* ▲▲▲ REGION SELECTOR ENDS ▲▲▲ */}
       {/* Input grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
         {/* Electricity */}
@@ -90,7 +117,7 @@ const handleUndo = () => {
                      transition-transform transition-shadow duration-300
                      hover:-translate-y-1.5 hover:shadow-lg hover:cursor-pointer"
         >
-          <label className="flex items-center font-semibold gap-2 text-gray-900 text-lg">
+          <label className="flex items-center font-semibold gap-2 text-gray-900 text-lg drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.2)]">
             <Zap className="text-black-700" size={30} />
             Electricity Usage:
           </label>
@@ -113,7 +140,7 @@ const handleUndo = () => {
                      transition-transform transition-shadow duration-300
                      hover:-translate-y-1.5 hover:shadow-lg hover:cursor-pointer"
         >
-          <label className="flex items-center font-semibold gap-2 text-gray-900 text-lg">
+          <label className="flex items-center font-semibold gap-2 text-gray-900 text-lg drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.2)]">
             <Droplet className="text-black-700" size={30} />
             Water Consumption:
           </label>
@@ -136,14 +163,15 @@ const handleUndo = () => {
                      transition-transform transition-shadow duration-300
                      hover:-translate-y-1.5 hover:shadow-lg hover:cursor-pointer"
         >
-          <label className="flex items-center font-semibold gap-2 text-gray-900 text-lg">
+          <label className="flex items-center font-semibold gap-2 text-gray-900 text-lg drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.2)]">
             <Fuel className="text-black-700" size={30} />
             Fuel Consumption:
           </label>
           <select
             value={formData.fuelType}
             onChange={(e) => handleSelectChange("fuelType", e.target.value)}
-            className="rounded-[25px] border-4 border-[#faf6e9] outline-none px-5 py-3 text-lg mb-2"
+            className="rounded-[25px] border-4 border-[#faf6e9] outline-none px-5 py-3 text-lg mb-2 shadow-[inset_0_2px_4px_0_rgba(0,0,0,0.05)]
+            hover:shadow-[inset_0_2px_8px_0_rgba(0,0,0,0.1)]"
           >
             <option value="gasoline">Gasoline</option>
             <option value="diesel">Diesel</option>
@@ -168,14 +196,15 @@ const handleUndo = () => {
                      transition-transform transition-shadow duration-300
                      hover:-translate-y-1.5 hover:shadow-lg hover:cursor-pointer"
         >
-          <label className="flex items-center font-semibold gap-2 text-gray-900 text-lg">
+          <label className="flex items-center font-semibold gap-2 text-gray-900 text-lg drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.2)]">
             <Trash2 className="text-black-700" size={30} />
             Waste Produced:
           </label>
           <select
             value={formData.disposalMethod}
             onChange={(e) => handleSelectChange("disposalMethod", e.target.value)}
-            className="rounded-[25px] border-4 border-[#faf6e9] outline-none px-5 py-3 text-lg mb-2"
+            className="rounded-[25px] border-4 border-[#faf6e9] outline-none px-5 py-3 text-lg mb-2 shadow-[inset_0_2px_4px_0_rgba(0,0,0,0.05)]
+            hover:shadow-[inset_0_2px_8px_0_rgba(0,0,0,0.1)]"
           >
             <option value="recycled">Recycled</option>
             <option value="landfilled">Landfilled</option>
@@ -201,7 +230,7 @@ const handleUndo = () => {
     variant="secondary"
     size="md"
     onClick={handleUndo} // You can define this function
-    className="bg-green-900 hover:bg-green-950 text-white"
+    className="bg-green-900 hover:bg-green-950 text-white drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.2)]"
   >
     Undo
   </Button>
