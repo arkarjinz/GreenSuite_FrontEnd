@@ -7,6 +7,7 @@ import { calculateFootprint } from '@/lib/api/carbon';
 // Add these type definitions
 // Add these types to match your Java enums
 type ActivityType = "ELECTRICITY" | "WATER" | "WASTE" | "FUEL";
+
 type VolumeUnit = "LITERS" | "CUBIC_METERS"; // Add other units if needed
 type DisposalMethod = "recycled" | "landfilled" | "incinerated";
 type FuelType = "gasoline" | "diesel" | "naturalGas";
@@ -15,17 +16,39 @@ type Region = "us" | "eu" | "asia" | "fr" | "de" | "cn" | "in";
 type Month = 
   | "January" | "February" | "March" | "April" | "May" | "June" 
   | "July" | "August" | "September" | "October" | "November" | "December";
-const ResourceForm: React.FC = () => {
+// Define the FormData type explicitly
+type FormData = {
+  electricity: string;
+  water: string;
+  fuel: string;
+  waste: string;
+  fuelType: FuelType;
+  unit: VolumeUnit;
+  disposalMethod: DisposalMethod;
+  region: Region;
+  month: Month;
+};
+
+// Define the mapping with proper typing
+const activityFieldMap: Record<ActivityType, keyof FormData> = {
+  ELECTRICITY: 'electricity',
+  WATER: 'water',
+  FUEL: 'fuel',
+  WASTE: 'waste'
+} as const;
+  const ResourceForm: React.FC = () => {
   const [formData, setFormData] = useState({
     electricity: "",
     water: "",
     fuel: "",
     fuelType: "gasoline" as FuelType, // New field
+     unit: "LITERS" as VolumeUnit, // Add this line
     waste: "",
      disposalMethod: "recycled" as DisposalMethod, // New field
     region: "us" as Region, // Default to United States
     month: new Date().toLocaleString('default', { month: 'long' }) as Month, // Defaults to current month
   });
+  
 
   const handleChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -35,7 +58,7 @@ const ResourceForm: React.FC = () => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 const handleUndo = () => {
-    setFormData({ electricity: "", water: "", fuel: "", fuelType: "gasoline",waste: "",  disposalMethod: "recycled" ,region:"us", month: new Date().toLocaleString('default', { month: 'long' }) as Month,});
+    setFormData({ electricity: "", water: "", fuel: "", fuelType: "gasoline",waste: "",  disposalMethod: "recycled" ,region:"us", month: new Date().toLocaleString('default', { month: 'long' }) as Month,unit:"LITERS"});
   };
   const [showHelp, setShowHelp] = useState(false);
  const [isSubmitting, setIsSubmitting] = useState(false);
@@ -52,15 +75,25 @@ const handleSubmit = async () => {
     const activityType = formData.electricity ? 'ELECTRICITY' : 
                        formData.water ? 'WATER' :
                        formData.fuel ? 'FUEL' : 'WASTE';
+// Type-safe field access
+    const fieldMap = {
+      ELECTRICITY: 'electricity',
+      WATER: 'water',
+      FUEL: 'fuel',
+      WASTE: 'waste'
+    } as const;
 
+    const fieldName = fieldMap[activityType];
+    const numericValue = Number(formData[fieldName]);
     const result = await calculateFootprint({
       activityType,
-      value: Number(formData[activityType.toLowerCase()]),
+       value: numericValue,  // Use the properly typed value
+      //value: Number(formData[activityType.toLowerCase()]),
       region: formData.region,
       month: formData.month,
       ...(activityType === 'FUEL' && { 
         fuelType: formData.fuelType,
-        unit: 'LITERS'
+        unit: 'formData.unit'
       }),
       ...(activityType === 'WASTE' && {
         disposalMethod: formData.disposalMethod
@@ -315,7 +348,7 @@ const handleSubmit = async () => {
     isLoading={isSubmitting}
     onClick={handleSubmit} 
     disabled={isSubmitting}// optional: set to false if not needed
-  >
+  > {isSubmitting ? "Calculating..." : "Submit"}
     Submit
   </Button>
 </div>
