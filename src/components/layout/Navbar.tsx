@@ -3,15 +3,12 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import Button from '@/components/ui/Button';
-// import ProfileImage from '@/components/ui/ProfileImage';
-// import GreenSuiteLogo from '@/components/ui/GreenSuiteLogo';
-import {AuthUser} from "@/types/auth";
+import { AuthUser } from '@/types/auth';
 
 const Navbar = () => {
     const { user, isAuthenticated, logout } = useAuth();
     const pathname = usePathname();
 
-    // Pages where we don't want to show the navbar
     const hiddenPages = [
         '/login',
         '/register',
@@ -29,8 +26,6 @@ const Navbar = () => {
                 <div className="flex justify-between h-16">
                     <div className="flex items-center">
                         <Link href={isAuthenticated ? "/dashboard" : "/"} className="flex items-center">
-                            {/*<GreenSuiteLogo size="md" />*/}
-                            Logo
                             <span className="ml-2 text-xl font-bold text-gray-900">GreenSuite</span>
                         </Link>
                     </div>
@@ -46,7 +41,7 @@ const Navbar = () => {
     );
 };
 
-const AuthenticatedNav = ({ user, logout }: { user: AuthUser | null, logout: () => void }) => (
+const AuthenticatedNav = ({ user, logout }: { user: AuthUser | null; logout: () => void }) => (
     <div className="flex items-center">
         <div className="hidden md:flex items-center space-x-6 mr-8">
             <NavLink href="/dashboard">Dashboard</NavLink>
@@ -57,8 +52,7 @@ const AuthenticatedNav = ({ user, logout }: { user: AuthUser | null, logout: () 
         <div className="flex items-center space-x-4">
             <div className="relative group">
                 <button className="flex items-center text-sm rounded-full focus:outline-none">
-                    {/*<ProfileImage user={user} size={32} />*/}
-                    Image
+                    <div className="bg-gray-200 border-2 border-dashed rounded-xl w-8 h-8" />
                 </button>
 
                 <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 hidden group-hover:block z-50">
@@ -98,13 +92,13 @@ const UnauthenticatedNav = () => (
     </div>
 );
 
-const NavLink = ({ href, children }: { href: string, children: React.ReactNode }) => (
+const NavLink = ({ href, children }: { href: string; children: React.ReactNode }) => (
     <Link href={href} className="text-gray-700 hover:text-green-600 px-3 py-2 font-medium">
         {children}
     </Link>
 );
 
-const NavDropdownLink = ({ href, children }: { href: string, children: React.ReactNode }) => (
+const NavDropdownLink = ({ href, children }: { href: string; children: React.ReactNode }) => (
     <Link href={href} className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
         {children}
     </Link>
