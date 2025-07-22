@@ -1,10 +1,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import {AuthUser, LoginDto, RegisterDto} from "@/types/auth";
-import {authApi, passwordApi} from "@/lib/api";
-
-
-
+import { AuthUser, LoginDto, RegisterDto } from '@/types/auth';
+import { authApi, passwordApi } from '@/lib/api';
 
 interface AuthContextType {
     user: AuthUser | null;
@@ -25,70 +22,89 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const [user, setUser] = useState<AuthUser | null>(null);
     const [token, setToken] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [isInitialized, setIsInitialized] = useState(false);
     const router = useRouter();
+
+    // Logout function
+    const logout = useCallback(() => {
+        localStorage.removeItem('token');
+        localStorage.removeItem('refreshToken');
+        setToken(null);
+        setUser(null);
+        router.push('/login');
+    }, [router]);
 
     // Initialize auth state
     const initializeAuth = useCallback(async () => {
+        setIsLoading(true);
         const storedToken = localStorage.getItem('token');
         const storedRefreshToken = localStorage.getItem('refreshToken');
 
         if (!storedToken || !storedRefreshToken) {
             setIsLoading(false);
+            setIsInitialized(true);
             return;
         }
 
         try {
-            const { accessToken, user: userData } = await authApi.refreshToken(storedRefreshToken);
-            localStorage.setItem('token', accessToken);
-            setToken(accessToken);
-            setUser(userData);
+            const response = await authApi.refreshToken(storedRefreshToken);
+            localStorage.setItem('token', response.accessToken);
+            setToken(response.accessToken);
+            setUser(response.user);
         } catch (error) {
             console.error('Token validation failed', error);
             logout();
         } finally {
             setIsLoading(false);
+            setIsInitialized(true);
         }
-    }, []);
+    }, [logout]);
 
     useEffect(() => {
         initializeAuth();
     }, [initializeAuth]);
 
-    const handleAuthResponse = (
+    // Handle redirects after auth initialization
+    useEffect(() => {
+        if (!isInitialized || isLoading) return;
+
+        if (!user) {
+            // Not authenticated, stay on current page
+            return;
+        }
+
+        // Handle redirect based on approval status
+        if (user.approvalStatus === 'PENDING') {
+            if (window.location.pathname !== '/pending') {
+                router.push('/pending');
+            }
+        } else {
+            if (window.location.pathname !== '/dashboard') {
+                router.push('/dashboard');
+            }
+        }
+    }, [user, isInitialized, isLoading, router]);
+
+    const handleAuthResponse = useCallback((
         accessToken: string,
         refreshToken: string,
-        userData: AuthUser | undefined // Allow undefined
+        userData: AuthUser
     ) => {
         localStorage.setItem('token', accessToken);
         localStorage.setItem('refreshToken', refreshToken);
         setToken(accessToken);
-        setUser(userData || null); // Handle undefined case
-
-        // Check if userData exists before accessing approvalStatus
-        // if (userData?.approvalStatus === 'PENDING') {
-        //     router.push('/pending');
-        // } else if (userData) {
-        //     router.push('/dashboard');
-        // } else {
-        //     // Handle missing user data scenario
-        //     console.error('User data missing in authentication response');
-        //     router.push('/login');
-        // }
-    };
+        setUser(userData);
+    }, []);
 
     const login = async (loginDto: LoginDto) => {
         setIsLoading(true);
         try {
-
-            const { accessToken, refreshToken, email, userName, roles } = await authApi.login(loginDto);
-            const responseUser: AuthUser =  {
-                email,
-                userName,
-                roles
-            };
-            console.log('Login response:', { accessToken, refreshToken, responseUser });
-            handleAuthResponse(accessToken, refreshToken, responseUser);
-            console.log('Login successful');
+            const response = await authApi.login(loginDto);
+            handleAuthResponse(
+                response.accessToken,
+                response.refreshToken,
+                response.user
+            );
         } catch (error) {
             console.error('Login failed', error);
             throw new Error('Invalid credentials. Please try again.');
@@ -100,8 +116,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const register = async (registerDto: RegisterDto) => {
         setIsLoading(true);
         try {
-            const { accessToken, refreshToken, user: userData } = await authApi.register(registerDto);
-            handleAuthResponse(accessToken, refreshToken, userData);
+            const response = await authApi.register(registerDto);
+            handleAuthResponse(
+                response.accessToken,
+                response.refreshToken,
+                response.user
+            );
         } catch (error) {
             console.error('Registration failed', error);
             throw new Error('Registration failed. Please try again.');
@@ -110,15 +130,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
     };
 
-    const logout = useCallback(() => {
-        localStorage.removeItem('token');
-        localStorage.removeItem('refreshToken');
-        setToken(null);
-        setUser(null);
-        router.push('/login');
-    }, [router]);
-
-    // Password recovery methods
     const forgotPassword = async (email: string): Promise<string[]> => {
         return await passwordApi.getSecurityQuestions(email);
     };
@@ -161,4 +172,3 @@ export const useAuth = () => {
     }
     return context;
 };
-
