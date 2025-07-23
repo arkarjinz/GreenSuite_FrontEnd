@@ -1,24 +1,31 @@
 "use client"
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import Button from '@/components/ui/Button';
 import { AuthUser } from '@/types/auth';
 
 const Navbar = () => {
-    const { user, isAuthenticated, logout } = useAuth();
-    const pathname = usePathname();
+    const { user, isAuthenticated, isLoading, logout } = useAuth();
 
-    const hiddenPages = [
-        '/login',
-        '/register',
-        '/forgot-password',
-        '/security-questions',
-        '/reset-password',
-        '/pending'
-    ];
-
-    if (hiddenPages.includes(pathname)) return null;
+    // Show minimal navbar during loading
+    if (isLoading) {
+        return (
+            <nav className="bg-white shadow-sm fixed w-full z-10">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="flex justify-between h-16 items-center">
+                        <div className="flex items-center">
+                            <Link href="/" className="flex items-center">
+                                <span className="ml-2 text-xl font-bold text-gray-900">GreenSuite</span>
+                            </Link>
+                        </div>
+                        <div className="w-8 h-8">
+                            <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-green-600"></div>
+                        </div>
+                    </div>
+                </div>
+            </nav>
+        );
+    }
 
     return (
         <nav className="bg-white shadow-sm fixed w-full z-10">

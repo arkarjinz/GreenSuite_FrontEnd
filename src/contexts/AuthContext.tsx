@@ -21,7 +21,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const [user, setUser] = useState<AuthUser | null>(null);
     const [token, setToken] = useState<string | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
+    const [isLoading, setIsLoading] = useState(false); // Start as not loading
     const [isInitialized, setIsInitialized] = useState(false);
     const router = useRouter();
 
@@ -34,39 +34,40 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         router.push('/login');
     }, [router]);
 
-    // Initialize auth state
-    const initializeAuth = useCallback(async () => {
-        setIsLoading(true);
-        const storedToken = localStorage.getItem('token');
-        const storedRefreshToken = localStorage.getItem('refreshToken');
-
-        if (!storedToken || !storedRefreshToken) {
-            setIsLoading(false);
-            setIsInitialized(true);
-            return;
-        }
-
-        try {
-            const response = await authApi.refreshToken(storedRefreshToken);
-            localStorage.setItem('token', response.accessToken);
-            setToken(response.accessToken);
-            setUser(response.user);
-        } catch (error) {
-            console.error('Token validation failed', error);
-            logout();
-        } finally {
-            setIsLoading(false);
-            setIsInitialized(true);
-        }
-    }, [logout]);
-
+    // Initialize auth state without blocking UI
     useEffect(() => {
-        initializeAuth();
-    }, [initializeAuth]);
+        const initializeAuth = async () => {
+            const storedToken = localStorage.getItem('token');
+            const storedRefreshToken = localStorage.getItem('refreshToken');
+
+            if (!storedToken || !storedRefreshToken) {
+                setIsInitialized(true);
+                return;
+            }
+
+            try {
+                setIsLoading(true);
+                const response = await authApi.refreshToken(storedRefreshToken);
+                localStorage.setItem('token', response.accessToken);
+                setToken(response.accessToken);
+                setUser(response.user);
+            } catch (error) {
+                console.error('Token validation failed', error);
+                logout();
+            } finally {
+                setIsLoading(false);
+                setIsInitialized(true);
+            }
+        };
+
+        if (!isInitialized) {
+            initializeAuth();
+        }
+    }, [isInitialized, logout]);
 
     // Handle redirects after auth initialization
     useEffect(() => {
-        if (!isInitialized || isLoading) return;
+        if (!isInitialized) return;
 
         if (!user) {
             // Not authenticated, stay on current page
@@ -74,26 +75,30 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
 
         // Handle redirect based on approval status
-        if (user.approvalStatus === 'PENDING') {
-            if (window.location.pathname !== '/pending') {
-                router.push('/pending');
-            }
-        } else {
-            if (window.location.pathname !== '/dashboard') {
-                router.push('/dashboard');
-            }
+        const currentPath = window.location.pathname;
+        if (user.approvalStatus === 'PENDING' && currentPath !== '/pending') {
+            router.push('/pending');
+        } else if (user.approvalStatus === 'APPROVED' && currentPath !== '/dashboard') {
+            router.push('/dashboard');
         }
-    }, [user, isInitialized, isLoading, router]);
+    }, [user, isInitialized, router]);
 
     const handleAuthResponse = useCallback((
         accessToken: string,
         refreshToken: string,
         userData: AuthUser
     ) => {
+        // Ensure companyName exists
+        const userWithCompany = {
+            ...userData,
+            companyName: userData.companyName || userData.companyId || 'Company Name Not Set'
+        };
+
+        console.log('Storing tokens:', accessToken, refreshToken);
         localStorage.setItem('token', accessToken);
         localStorage.setItem('refreshToken', refreshToken);
         setToken(accessToken);
-        setUser(userData);
+        setUser(userWithCompany);
     }, []);
 
     const login = async (loginDto: LoginDto) => {
