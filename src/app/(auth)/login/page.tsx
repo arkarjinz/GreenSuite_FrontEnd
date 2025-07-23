@@ -1,13 +1,13 @@
 import LoginForm from '@/components/auth/LoginForm';
-import AuthLayout from "@/components/layout/AuthLayout";
 
 export default function LoginPage() {
     return (
-        <AuthLayout
-            title="Sign in to GreenSuite"
-            subtitle="Track and reduce your company's carbon footprint"
-        >
+        <>
+            <div className="text-center mb-8">
+                <h1 className="text-3xl font-bold text-gray-900">Sign in to GreenSuite</h1>
+                <p className="mt-2 text-gray-600">Track and reduce your company&#39;s carbon footprint</p>
+            </div>
             <LoginForm />
-        </AuthLayout>
+        </>
     );
 }
