@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import {useState,  JSX} from "react";
 import { Lightbulb, Fuel, Droplet, Trash2 } from "lucide-react";
 import Button from "@/components/ui/Button";
 

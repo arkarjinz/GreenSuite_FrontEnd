@@ -2,6 +2,7 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import LoadingSpinner from '@/components/ui/LoadingSpinner';
 
 export default function DashboardPage() {
     const { user, isLoading } = useAuth();
@@ -15,17 +16,17 @@ export default function DashboardPage() {
     }, [user, isLoading, router]);
 
     if (isLoading) {
-        return <div className="min-h-screen bg-gray-50 flex items-center justify-center">Loading...</div>;
+        return <LoadingSpinner fullScreen />;
     }
 
     if (!user || user.approvalStatus === 'PENDING') {
-        // This will be redirected by useEffect
-        return <div className="min-h-screen bg-gray-50 flex items-center justify-center">Redirecting...</div>;
+        return <LoadingSpinner fullScreen />;
     }
 
     return (
-        <div>
-            <h1>Dashboard</h1>
+        <div className="p-4">
+            <h1 className="text-2xl font-bold">Dashboard</h1>
+            <p className="mt-4">Welcome to your sustainability dashboard!</p>
             {/* Your dashboard content here */}
         </div>
     );

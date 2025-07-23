@@ -30,56 +30,56 @@ export const authApi = {
             }
         });
 
-        // Extract data from backend's ApiResponse structure
         const responseData = response.data.data;
 
-        // Ensure user object has approvalStatus
-        if (!responseData.user || responseData.user.approvalStatus === undefined) {
-            console.error('Invalid login response:', response.data);
-            throw new Error('Invalid user data in login response');
-        }
+        // Fix: Handle null companyName
+        const user = {
+            ...responseData.user,
+            companyName: responseData.user.companyName || responseData.user.companyId || 'Company Name Not Set',
+            approvalStatus: responseData.user.approvalStatus || 'APPROVED'
+        };
 
         return {
             accessToken: responseData.accessToken,
             refreshToken: responseData.refreshToken,
-            user: responseData.user
+            user
         };
     },
 
     register: async (registerDto: RegisterDto): Promise<RegisterResponse> => {
         const response = await axios.post(`${API_BASE_URL}/api/auth/register`, registerDto);
 
-        // Extract data from backend's ApiResponse structure
         const responseData = response.data.data;
 
-        // Ensure user object has approvalStatus
-        if (!responseData.user || responseData.user.approvalStatus === undefined) {
-            console.error('Invalid register response:', response.data);
-            throw new Error('Invalid user data in register response');
-        }
+        // Fix: Handle null companyName
+        const user = {
+            ...responseData.user,
+            companyName: responseData.user.companyName || responseData.user.companyId || 'Company Name Not Set',
+            approvalStatus: responseData.user.approvalStatus || 'PENDING'
+        };
 
         return {
             accessToken: responseData.accessToken,
             refreshToken: responseData.refreshToken,
-            user: responseData.user
+            user
         };
     },
 
     refreshToken: async (refreshToken: string): Promise<RefreshResponse> => {
         const response = await axios.post(`${API_BASE_URL}/api/auth/refresh`, { refreshToken });
 
-        // Extract data from backend's ApiResponse structure
         const responseData = response.data.data;
 
-        // Ensure user object has approvalStatus
-        if (!responseData.user || responseData.user.approvalStatus === undefined) {
-            console.error('Invalid refresh response:', response.data);
-            throw new Error('Invalid user data in refresh token response');
-        }
+        // Fix: Handle null companyName
+        const user = {
+            ...responseData.user,
+            companyName: responseData.user.companyName || responseData.user.companyId || 'Company Name Not Set',
+            approvalStatus: responseData.user.approvalStatus || 'APPROVED'
+        };
 
         return {
             accessToken: responseData.accessToken,
-            user: responseData.user
+            user
         };
     }
 };
@@ -103,6 +103,11 @@ export const passwordApi = {
 export const companyApi = {
     searchCompanies: async (query: string): Promise<Company[]> => {
         const response = await axios.get(`${API_BASE_URL}/api/public/companies?query=${query}`);
+        return response.data;
+    },
+
+    getCompanyById: async (companyId: string): Promise<Company> => {
+        const response = await axios.get<Company>(`${API_BASE_URL}/api/public/companies/${companyId}`);
         return response.data;
     },
 };
