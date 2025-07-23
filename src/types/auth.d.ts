@@ -10,10 +10,28 @@ export type RegisterDto = {
     email: string;
     password: string;
     companyRole: 'OWNER' | 'MANAGER' | 'EMPLOYEE';
-    companyId?: string; // For non-owners
-    companyName?: string; // For owners
-    companyAddress?: string; // For owners
-    industry?: string; // For owners
+    companyId?: string;
+    companyName?: string;
+    companyAddress?: string;
+    industry?: string;
+};
+
+export type AuthUser = {
+    id: string;
+    firstName: string;
+    lastName: string;
+    userName: string;
+    email: string;
+    companyId?: string;
+    companyName?: string;
+    companyRole: string;
+    globalAdmin?: boolean;
+    approvalStatus: 'PENDING' | 'APPROVED' | 'REJECTED';
+    createdAt?: string;
+    lastActive?: string;
+    streakCount?: number;
+    aiCredits?: number;
+    roles?: string[];
 };
 
 export type SecurityQuestionsRequest = {
@@ -30,20 +48,3 @@ export type ResetPasswordRequest = {
     newPassword: string;
 };
 
-export type AuthUser = {
-    id?: string;
-    firstName?: string;
-    lastName?: string;
-    userName?: string;
-    email?: string;
-    companyId?: string;
-    companyName?: string;
-    companyRole?: string;
-    globalAdmin?: boolean;
-    approvalStatus?: 'PENDING' | 'APPROVED' | 'REJECTED';
-    createdAt?: string;
-    lastActive?: string;
-    streakCount?: number;
-    aiCredits?: number;
-    roles?: string[];
-};
