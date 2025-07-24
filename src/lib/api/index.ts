@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { LoginDto, RegisterDto, AuthUser } from "@/types/auth";
 import { Company } from "@/types/company";
+import axiosInstance from "@/lib/api/axiosInstance";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080';
 
@@ -24,62 +25,42 @@ interface RefreshResponse {
 
 export const authApi = {
     login: async (loginDto: LoginDto): Promise<LoginResponse> => {
-        const response = await axios.post(`${API_BASE_URL}/api/auth/login`, loginDto, {
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        });
-
+        const response = await axiosInstance.post('/api/auth/login', loginDto);
         const responseData = response.data.data;
-
-        // Fix: Handle null companyName
-        const user = {
-            ...responseData.user,
-            companyName: responseData.user.companyName || responseData.user.companyId || 'Company Name Not Set',
-            approvalStatus: responseData.user.approvalStatus || 'APPROVED'
-        };
 
         return {
             accessToken: responseData.accessToken,
             refreshToken: responseData.refreshToken,
-            user
+            user: {
+                ...responseData.user,
+                companyName: responseData.user.companyName || 'Company Name Not Set'
+            }
         };
     },
 
     register: async (registerDto: RegisterDto): Promise<RegisterResponse> => {
-        const response = await axios.post(`${API_BASE_URL}/api/auth/register`, registerDto);
-
+        const response = await axiosInstance.post('/api/auth/register', registerDto);
         const responseData = response.data.data;
-
-        // Fix: Handle null companyName
-        const user = {
-            ...responseData.user,
-            companyName: responseData.user.companyName || responseData.user.companyId || 'Company Name Not Set',
-            approvalStatus: responseData.user.approvalStatus || 'PENDING'
-        };
 
         return {
             accessToken: responseData.accessToken,
             refreshToken: responseData.refreshToken,
-            user
+            user: {
+                ...responseData.user,
+                companyName: responseData.user.companyName || 'Company Name Not Set'
+            }
         };
     },
 
     refreshToken: async (refreshToken: string): Promise<RefreshResponse> => {
-        const response = await axios.post(`${API_BASE_URL}/api/auth/refresh`, { refreshToken });
-
+        const response = await axiosInstance.post('/api/auth/refresh', { refreshToken });
         const responseData = response.data.data;
-
-        // Fix: Handle null companyName
-        const user = {
-            ...responseData.user,
-            companyName: responseData.user.companyName || responseData.user.companyId || 'Company Name Not Set',
-            approvalStatus: responseData.user.approvalStatus || 'APPROVED'
-        };
-
         return {
             accessToken: responseData.accessToken,
-            user
+            user: {
+                ...responseData.user,
+                companyName: responseData.user.companyName || responseData.user.companyId || 'Company Name Not Set'
+            }
         };
     }
 };
@@ -102,12 +83,29 @@ export const passwordApi = {
 
 export const companyApi = {
     searchCompanies: async (query: string): Promise<Company[]> => {
-        const response = await axios.get(`${API_BASE_URL}/api/public/companies?query=${query}`);
+        const response = await axiosInstance.get(`/api/public/companies?query=${query}`);
         return response.data;
     },
 
     getCompanyById: async (companyId: string): Promise<Company> => {
-        const response = await axios.get<Company>(`${API_BASE_URL}/api/public/companies/${companyId}`);
+        const response = await axiosInstance.get(`/api/public/companies/${companyId}`);
+        return response.data;
+    },
+};
+
+export const ownerApi = {
+    getPendingUsers: async (): Promise<AuthUser[]> => {
+        const response = await axiosInstance.get('/api/owner/pending-users');
+        return response.data;
+    },
+
+    approveUser: async (userId: string): Promise<AuthUser> => {
+        const response = await axiosInstance.post(`/api/owner/approve-user/${userId}`);
+        return response.data;
+    },
+
+    rejectUser: async (userId: string): Promise<AuthUser> => {
+        const response = await axiosInstance.post(`/api/owner/reject-user/${userId}`);
         return response.data;
     },
 };

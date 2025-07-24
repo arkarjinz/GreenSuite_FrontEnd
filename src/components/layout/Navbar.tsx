@@ -3,12 +3,19 @@ import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import Button from '@/components/ui/Button';
 import { AuthUser } from '@/types/auth';
+import { useState, useEffect } from 'react';
 
 const Navbar = () => {
     const { user, isAuthenticated, isLoading, logout } = useAuth();
+    const [isClient, setIsClient] = useState(false);
 
-    // Show minimal navbar during loading
-    if (isLoading) {
+    // Set isClient to true after component mounts
+    useEffect(() => {
+        setIsClient(true);
+    }, []);
+
+    // Show minimal navbar during initial load
+    if (!isClient || isLoading) {
         return (
             <nav className="bg-white shadow-sm fixed w-full z-10">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -19,7 +26,8 @@ const Navbar = () => {
                             </Link>
                         </div>
                         <div className="w-8 h-8">
-                            <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-green-600"></div>
+                            {/* Static spinner that matches server render */}
+                            <div className="rounded-full h-6 w-6 border-t-2 border-b-2 border-gray-300"></div>
                         </div>
                     </div>
                 </div>
@@ -30,7 +38,7 @@ const Navbar = () => {
     return (
         <nav className="bg-white shadow-sm fixed w-full z-10">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div className="flex justify-between h-16">
+                <div className="flex justify-between h-16 items-center">
                     <div className="flex items-center">
                         <Link href={isAuthenticated ? "/dashboard" : "/"} className="flex items-center">
                             <span className="ml-2 text-xl font-bold text-gray-900">GreenSuite</span>
@@ -54,6 +62,9 @@ const AuthenticatedNav = ({ user, logout }: { user: AuthUser | null; logout: () 
             <NavLink href="/dashboard">Dashboard</NavLink>
             <NavLink href="/carbon">Carbon Calculator</NavLink>
             <NavLink href="/reports">Reports</NavLink>
+            {user?.companyRole === 'OWNER' && (
+                <NavLink href="/dashboard/owner/users">Manage Users</NavLink>
+            )}
         </div>
 
         <div className="flex items-center space-x-4">
