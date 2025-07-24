@@ -20,36 +20,36 @@ export default function Home() {
 
   const testimonials = [
     {
-      name: "Sarah Johnson",
-      role: "Marketing Director",
-      company: "TechCorp",
-      content: "This platform has completely transformed how we manage our projects. The intuitive interface and powerful features have increased our team's productivity by 40%.",
-      rating: 5,
-      avatar: "https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop"
-    },
-    {
       name: "Michael Chen",
-      role: "Startup Founder",
-      company: "InnovateLab",
-      content: "I've tried countless tools, but this one stands out. The seamless integration and exceptional support team make it a game-changer for any growing business.",
+      role: "Operations Manager",
+      company: "EcoTech Solutions",
+      content: "Before this platform, tracking our resource usage was a mess. Now, everything's in one place—our team's more aligned, and we've actually made real progress on our carbon reduction goals.",
       rating: 5,
       avatar: "https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop"
     },
     {
-      name: "Emily Rodriguez",
-      role: "Product Manager",
-      company: "DesignStudio",
-      content: "The analytics and reporting features are incredible. We can now make data-driven decisions faster than ever before. Highly recommend to any team looking to scale.",
+      name: "Sarah Rodriguez",
+      role: "Sustainability Director",
+      company: "GreenStart Inc",
+      content: "The platform made it so easy for our team to set sustainability goals and actually stick to them. It's not just a tracker—it's a motivator.",
       rating: 5,
-      avatar: "https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop"
+      avatar: "https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop"
     },
     {
       name: "David Park",
-      role: "Operations Lead",
-      company: "GrowthCo",
-      content: "The automation capabilities have saved us countless hours. What used to take days now happens in minutes. It's like having a superpower for productivity.",
+      role: "Small Business Owner",
+      company: "Local Coffee Co",
+      content: "It's empowering to see how small changes in our daily operations actually add up. This tool gave us clarity and motivation to cut down on waste and fuel use.",
       rating: 5,
       avatar: "https://images.pexels.com/photos/1681010/pexels-photo-1681010.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop"
+    },
+    {
+      name: "Emily Johnson",
+      role: "Environmental Coordinator",
+      company: "TechForward",
+      content: "We've already seen a 15% drop in emissions in just 2 months. The visual progress bars and real-time feedback keep our team engaged and committed.",
+      rating: 5,
+      avatar: "https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop"
     }
   ];
 
@@ -138,8 +138,7 @@ export default function Home() {
               <span className="block text-[#43a243]">With Green Suite</span>
             </h1>
             <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto leading-relaxed">
-              Streamline your workflow, boost productivity, and achieve your goals with our 
-              cutting-edge solution designed for modern teams.
+              Get Your Business To Start And Grow With Us By Helping The Environment. Stay True, Stay Green.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
               <Button size="lg" className="bg-[#43a243] hover:bg-[#3a8f3a] text-white px-8 py-3">
