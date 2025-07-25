@@ -60,7 +60,7 @@ const AuthenticatedNav = ({ user, logout }: { user: AuthUser | null; logout: () 
     <div className="flex items-center">
         <div className="hidden md:flex items-center space-x-6 mr-8">
             <NavLink href="/dashboard">Dashboard</NavLink>
-            <NavLink href="/carbon">Carbon Calculator</NavLink>
+            <NavLink href="/resource/input">Carbon Calculator</NavLink>
             <NavLink href="/reports">Reports</NavLink>
             {user?.companyRole === 'OWNER' && (
                 <NavLink href="/dashboard/owner/users">Manage Users</NavLink>

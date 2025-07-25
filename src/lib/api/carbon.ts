@@ -1,4 +1,3 @@
-// src/lib/api/carbon.ts
 export const calculateFootprint = async (data: {
   activityType: string;
   value: number;
@@ -7,23 +6,11 @@ export const calculateFootprint = async (data: {
   fuelType?: string;
   unit?: string;
   disposalMethod?: string;
-}, token?: string) => {
+}) => {
   try {
-    // Enhanced logging
-    console.log('Sending carbon calculation request:', data);
- // Prepare final payload
-    const payload = {
-      ...data,
-      activityType: data.activityType.toUpperCase(),
-      month: data.month.toUpperCase(),
-      region: data.region.toUpperCase(),
-      fuelType: data.fuelType?.toUpperCase(),
-      unit: data.unit?.toUpperCase(),
-      disposalMethod: data.disposalMethod?.toUpperCase()
-    };
-    // 👇 Add this line before fetch
-    console.log("Final payload:", JSON.stringify(payload, null, 2));
-console.log("Auth token:", token);
+    // Get token from localStorage directly here
+    const token = localStorage.getItem("accessToken");
+    console.log("Using Auth token:", token);
 
     const response = await fetch("http://localhost:8080/api/carbon/calculate", {
       method: "POST",
@@ -33,7 +20,6 @@ console.log("Auth token:", token);
       },
       body: JSON.stringify({
         ...data,
-        // Ensure enum values match Java backend exactly
         activityType: data.activityType.toUpperCase(),
         month: data.month.toUpperCase(),
         region: data.region.toUpperCase(),
