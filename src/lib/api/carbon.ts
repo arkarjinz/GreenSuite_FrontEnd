@@ -9,7 +9,7 @@ export const calculateFootprint = async (data: {
 }) => {
   try {
     // Get token from localStorage directly here
-    const token = localStorage.getItem("accessToken");
+    const token = localStorage.getItem("token");
     console.log("Using Auth token:", token);
 
     const response = await fetch("http://localhost:8080/api/carbon/calculate", {

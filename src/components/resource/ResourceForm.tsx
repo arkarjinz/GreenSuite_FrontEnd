@@ -93,7 +93,7 @@ const handleSubmit = async () => {
       month: formData.month,
       ...(activityType === 'FUEL' && { 
         fuelType: formData.fuelType,
-        unit: 'formData.unit'
+        unit: formData.unit
       }),
       ...(activityType === 'WASTE' && {
         disposalMethod: formData.disposalMethod
@@ -173,12 +173,12 @@ const handleSubmit = async () => {
             hover:shadow-[inset_0_2px_8px_0_rgba(0,0,0,0.1)]"
         >
           <option value="us">United States (0.82 kg/kWh)</option>
-          <option value="eu">European Union (0.28 kg/kWh)</option>
+          <option value="eu">European Union (0.276 kg/kWh)</option>
           <option value="fr">France (0.044 kg/kWh)</option>
-          <option value="de">Germany (0.37 kg/kWh)</option>
-          <option value="cn">China (0.68 kg/kWh)</option>
-          <option value="in">India (0.72 kg/kWh)</option>
-          <option value="asia">Other Asia (0.72 kg/kWh)</option>
+          <option value="de">Germany (0.366kg/kWh)</option>
+          <option value="cn">China (0.681 kg/kWh)</option>
+          <option value="in">India (0.715 kg/kWh)</option>
+          <option value="asia">Other Asia (0.723 kg/kWh)</option>
         </select>
         <p className="text-sm mt-2 text-gray-700 drop-shadow-[0_0.8px_0.8px_rgba(0,0,0,0.1)]">
           Selection impacts electricity emission calculations
