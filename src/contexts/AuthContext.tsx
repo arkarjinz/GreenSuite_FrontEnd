@@ -88,17 +88,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         refreshToken: string,
         userData: AuthUser
     ) => {
-        // Ensure companyName exists
-        const userWithCompany = {
-            ...userData,
-            companyName: userData.companyName || userData.companyId || 'Company Name Not Set'
-        };
-
-        console.log('Storing tokens:', accessToken, refreshToken);
         localStorage.setItem('token', accessToken);
         localStorage.setItem('refreshToken', refreshToken);
         setToken(accessToken);
-        setUser(userWithCompany);
+        setUser({
+            ...userData,
+            companyName: userData.companyName || userData.companyId || 'Company Name Not Set'
+        });
     }, []);
 
     const login = async (loginDto: LoginDto) => {
