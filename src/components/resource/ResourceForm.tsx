@@ -1,5 +1,7 @@
 "use client";
 
+import type { CarbonInput } from "@/types/carbon";
+
 import React, { useState } from "react";
 import { Calendar,Globe2,Zap, Fuel, Droplet, Trash2 } from "lucide-react";
 import Button from "@/components/ui/Button"; 
@@ -66,27 +68,27 @@ const handleUndo = () => {
     setShowHelp((prev) => !prev);
   };// components/resource/ResourceForm.tsx
 
+//start of handlesubmit(old)
+//const handleSubmit = async () => {
+  //setIsSubmitting(true);
 
-const handleSubmit = async () => {
-  setIsSubmitting(true);
-
-  try {
+ // try {
     // Determine activity type (simplified example)
-    const activityType = formData.electricity ? 'ELECTRICITY' : 
+   // const activityType = formData.electricity ? 'ELECTRICITY' : 
                        formData.water ? 'WATER' :
                        formData.fuel ? 'FUEL' : 'WASTE';
 // Type-safe field access
-    const fieldMap = {
-      ELECTRICITY: 'electricity',
-      WATER: 'water',
-      FUEL: 'fuel',
-      WASTE: 'waste'
-    } as const;
+    //const fieldMap = {
+     // ELECTRICITY: 'electricity',
+     // WATER: 'water',
+     // FUEL: 'fuel',
+     // WASTE: 'waste'
+   // } as const;
 
-    const fieldName = fieldMap[activityType];
-    const numericValue = Number(formData[fieldName]);
-    const result = await calculateFootprint({
-      activityType,
+   // const fieldName = fieldMap[activityType];
+   // const numericValue = Number(formData[fieldName]);
+   // const result = await calculateFootprint({
+      /*activityType,
        value: numericValue,  // Use the properly typed value
       //value: Number(formData[activityType.toLowerCase()]),
       region: formData.region,
@@ -109,7 +111,67 @@ const handleSubmit = async () => {
   } finally {
     setIsSubmitting(false);
   }
+};//*///end of handlesubmit(old)
+const handleSubmit = async () => {
+  setIsSubmitting(true);
+
+  try {
+    const inputs: CarbonInput[] = [];
+
+    if (formData.electricity) {
+      inputs.push({
+        activityType: "ELECTRICITY",
+        value: Number(formData.electricity),
+        region: formData.region,
+        month: formData.month
+      });
+    }
+
+    if (formData.water) {
+      inputs.push({
+        activityType: "WATER",
+        value: Number(formData.water),
+        region: formData.region,
+        month: formData.month
+      });
+    }
+
+    if (formData.fuel) {
+      inputs.push({
+        activityType: "FUEL",
+        value: Number(formData.fuel),
+        region: formData.region,
+        month: formData.month,
+        fuelType: formData.fuelType,
+        unit: formData.unit
+      });
+    }
+
+    if (formData.waste) {
+      inputs.push({
+        activityType: "WASTE",
+        value: Number(formData.waste),
+        region: formData.region,
+        month: formData.month,
+        disposalMethod: formData.disposalMethod
+      });
+    }
+
+    if (inputs.length === 0) {
+      alert("Please enter at least one activity value.");
+      return;
+    }
+
+    const result = await calculateFootprint(inputs); // Send array of inputs
+    console.log("Calculation result:", result);
+
+  } catch (error) {
+    console.error("API Error:", error);
+  } finally {
+    setIsSubmitting(false);
+  }
 };
+
 
   return (
     <div className="max-w-[900px] mx-auto p-8 font-poppins">
