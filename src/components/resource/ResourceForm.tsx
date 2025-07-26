@@ -293,10 +293,11 @@ const handleSubmit = async () => {
     className="rounded-[25px] border-4 border-[#faf6e9] outline-none px-5 py-3 text-lg w-full shadow-[inset_0_2px_4px_0_rgba(0,0,0,0.05)] hover:shadow-[inset_0_2px_8px_0_rgba(0,0,0,0.1)]"
   >
     {Array.from({ length: 12 }, (_, i) => {
-      const month = new Date(0, i).toLocaleString('default', { month: 'long' });
+      const monthName = new Date(0, i).toLocaleString('default', { month: 'long' });
+      const monthValue = String(i + 1).padStart(2, '0'); // "07"
       return (
-        <option key={month} value={month}>
-          {month}
+        <option key={monthValue} value={monthValue}>
+          {monthName}
         </option>
       );
     })}
