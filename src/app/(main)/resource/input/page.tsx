@@ -1,5 +1,5 @@
 "use client";
-import Header from "@/components/resource/Header";
+//import Header from "@/components/resource/Header";
 import ResourceForm from "@/components/resource/ResourceForm";
 
 export default function ResourcePage() {
@@ -10,7 +10,7 @@ export default function ResourcePage() {
       style={{ backgroundImage: "url('/11493765.png')" }}
     >
       <div className="bg-white/80 min-h-screen">
-      <Header onBack={() => window.history.back()} />
+      {/*<Header onBack={() => window.history.back()} />*/}
       <section style={{ padding: "2rem 1rem" }}>
         <ResourceForm />
       </section>

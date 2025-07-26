@@ -391,7 +391,7 @@ const handleSubmit = async () => {
                        px-5 py-3 text-lg
                        transition-transform transition-shadow duration-200
                        hover:scale-[1.03] hover:shadow-md"
-            placeholder="Litres/month"
+            placeholder="Litres or Cubic Meters/month"
           />
         </div>
 
