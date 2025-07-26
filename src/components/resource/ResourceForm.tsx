@@ -6,7 +6,7 @@ import React, { useState } from "react";
 import { Calendar,Globe2,Zap, Fuel, Droplet, Trash2 } from "lucide-react";
 import Button from "@/components/ui/Button"; 
 import { calculateFootprint } from '@/lib/api/carbon';
-// Add these type definitions
+
 // Add these types to match your Java enums
 type ActivityType = "ELECTRICITY" | "WATER" | "WASTE" | "FUEL";
 
@@ -29,6 +29,12 @@ type FormData = {
   disposalMethod: DisposalMethod;
   region: Region;
   month: Month;
+  year: string; 
+};
+const getNumericMonth = (monthName: string): string => {
+  const date = new Date(`${monthName} 1, 2000`);
+  const month = date.getMonth() + 1;
+  return month.toString().padStart(2, '0'); // e.g., '07'
 };
 
 // Define the mapping with proper typing
@@ -39,7 +45,7 @@ const activityFieldMap: Record<ActivityType, keyof FormData> = {
   WASTE: 'waste'
 } as const;
   const ResourceForm: React.FC = () => {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<FormData>({
     electricity: "",
     water: "",
     fuel: "",
@@ -49,18 +55,19 @@ const activityFieldMap: Record<ActivityType, keyof FormData> = {
      disposalMethod: "recycled" as DisposalMethod, // New field
     region: "us" as Region, // Default to United States
     month: new Date().toLocaleString('default', { month: 'long' }) as Month, // Defaults to current month
+    year: new Date().getFullYear().toString(), 
   });
   
 
-  const handleChange = (field: string, value: string) => {
+  const handleChange = (field: keyof FormData, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
    // New handler for select fields
-  const handleSelectChange = (field: string, value: string) => {
+  const handleSelectChange = (field: keyof FormData, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 const handleUndo = () => {
-    setFormData({ electricity: "", water: "", fuel: "", fuelType: "gasoline",waste: "",  disposalMethod: "recycled" ,region:"us", month: new Date().toLocaleString('default', { month: 'long' }) as Month,unit:"LITERS"});
+    setFormData({ electricity: "", water: "", fuel: "", fuelType: "gasoline",waste: "",  disposalMethod: "recycled" ,region:"us", month: new Date().toLocaleString('default', { month: 'long' }) as Month,unit:"LITERS", year: new Date().getFullYear().toString() });
   };
   const [showHelp, setShowHelp] = useState(false);
  const [isSubmitting, setIsSubmitting] = useState(false);
@@ -75,8 +82,8 @@ const handleUndo = () => {
  // try {
     // Determine activity type (simplified example)
    // const activityType = formData.electricity ? 'ELECTRICITY' : 
-                       formData.water ? 'WATER' :
-                       formData.fuel ? 'FUEL' : 'WASTE';
+                      // formData.water ? 'WATER' :
+                      // formData.fuel ? 'FUEL' : 'WASTE';
 // Type-safe field access
     //const fieldMap = {
      // ELECTRICITY: 'electricity',
@@ -116,6 +123,7 @@ const handleSubmit = async () => {
   setIsSubmitting(true);
 
   try {
+     const numericMonth = getNumericMonth(formData.month); // convert month name to '07' etc.
     const inputs: CarbonInput[] = [];
 
     if (formData.electricity) {
@@ -123,7 +131,8 @@ const handleSubmit = async () => {
         activityType: "ELECTRICITY",
         value: Number(formData.electricity),
         region: formData.region,
-        month: formData.month
+        month: formData.month,
+        year: formData.year,
       });
     }
 
@@ -132,7 +141,8 @@ const handleSubmit = async () => {
         activityType: "WATER",
         value: Number(formData.water),
         region: formData.region,
-        month: formData.month
+        month: formData.month,
+        year: formData.year,
       });
     }
 
@@ -142,6 +152,7 @@ const handleSubmit = async () => {
         value: Number(formData.fuel),
         region: formData.region,
         month: formData.month,
+        year: formData.year,
         fuelType: formData.fuelType,
         unit: formData.unit
       });
@@ -153,6 +164,7 @@ const handleSubmit = async () => {
         value: Number(formData.waste),
         region: formData.region,
         month: formData.month,
+        year: formData.year,
         disposalMethod: formData.disposalMethod
       });
     }
@@ -247,8 +259,30 @@ const handleSubmit = async () => {
            </p>
       </div>
       {/* ▲▲▲ REGION SELECTOR ENDS ▲▲▲ */}
+      <div className="flex gap-6 mb-6">
+      {/*Year Selection*/}
+      <div className="flex-1 bg-[#43a243] p-6 rounded-[28px] transition-transform transition-shadow duration-300 hover:-translate-y-1.5 hover:shadow-lg hover:cursor-pointer">
+  <label className="flex items-center font-semibold gap-2 text-gray-900 text-lg mb-3 drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.2)]">
+    <Calendar className="text-black-700" size={24} /> {/* Add Calendar to your lucide-react imports */}
+    Reporting Year
+  </label>
+  <select
+    value={formData.year}
+    onChange={(e) => handleSelectChange("year", e.target.value)}
+    className="rounded-[25px] border-4 border-[#faf6e9] outline-none px-5 py-3 text-lg w-full shadow-[inset_0_2px_4px_0_rgba(0,0,0,0.05)] hover:shadow-[inset_0_2px_8px_0_rgba(0,0,0,0.1)]"
+  >
+    {Array.from({ length: 10 }, (_, i) => {
+      const yearOption = (new Date().getFullYear() - 5 + i).toString(); // show 5 years back and 4 years ahead
+      return (
+        <option key={yearOption} value={yearOption}>
+          {yearOption}
+        </option>
+      );
+    })}
+  </select>
+</div>
       {/* Month Selection */}
-<div className="mb-6 bg-[#43a243] p-6 rounded-[28px] transition-transform transition-shadow duration-300 hover:-translate-y-1.5 hover:shadow-lg hover:cursor-pointer">
+<div className="flex-1 bg-[#43a243] p-6 rounded-[28px] transition-transform transition-shadow duration-300 hover:-translate-y-1.5 hover:shadow-lg hover:cursor-pointer">
   <label className="flex items-center font-semibold gap-2 text-gray-900 text-lg mb-3 drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.2)]">
     <Calendar className="text-black-700" size={24} /> {/* Add Calendar to your lucide-react imports */}
     Reporting Month
@@ -267,6 +301,7 @@ const handleSubmit = async () => {
       );
     })}
   </select>
+</div>
 </div>
       {/* Input grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
@@ -412,7 +447,7 @@ const handleSubmit = async () => {
     onClick={handleSubmit} 
     disabled={isSubmitting}// optional: set to false if not needed
   > {isSubmitting ? "Calculating..." : "Submit"}
-    Submit
+    
   </Button>
 </div>
     </div>

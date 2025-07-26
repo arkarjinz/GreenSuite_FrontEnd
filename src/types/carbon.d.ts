@@ -14,7 +14,10 @@ export type CarbonInput = {
   value: number;
   region?: string;
   fuelType?: 'gasoline' | 'diesel' | 'naturalGas';
+  //fuelType?: 'GASOLINE' | 'DIESEL' | 'NATURAL_GAS'; // ✅ Matches Java enum
+
   disposalMethod?: 'recycled' | 'landfilled' | 'incinerated';
   unit?: 'LITERS' | 'CUBIC_METERS';
   month?: string;
+  year?: string;
 };
