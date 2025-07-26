@@ -57,6 +57,7 @@ export const calculateFootprint = async (data: CarbonInput[]) => {
       },
       body: JSON.stringify(data.map(input => ({
         ...input,
+        userId: localStorage.getItem("userId"), 
         activityType: input.activityType.toUpperCase(),
         month: input.month?.toUpperCase(),
         region: input.region?.toUpperCase(),

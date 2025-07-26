@@ -310,6 +310,7 @@ const handleSubmit = async () => {
             onChange={(e) => handleChange("water", e.target.value)}
             className="rounded-[25px] border-4 border-[#faf6e9] outline-none
                        px-5 py-3 text-lg
+                   
                        transition-transform transition-shadow duration-200
                        hover:scale-[1.03] hover:shadow-md"
             placeholder="Litres/month"
