@@ -15,7 +15,7 @@ const PieChart = () => {
     'rgba(255, 99, 132, 0.6)',   // Electricity
     'rgba(54, 162, 235, 0.6)',   // Fuels
     'rgba(255, 206, 86, 0.6)',   // Water
-    'rgba(75, 192, 192, 0.6)',   // Waste
+    'rgba(24, 229, 147, 0.6)',   // Waste
     'rgba(153, 102, 255, 0.6)',  // Recycle
   ];
 
