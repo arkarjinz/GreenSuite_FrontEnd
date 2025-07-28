@@ -5,6 +5,9 @@ import { Bar, Line } from 'react-chartjs-2';
 import PieChart from '@/components/Charts/piechart';
 import { fetchCarbonTotalsByYear } from '@/lib/api/extractDataForCharts';
 import { useAuth } from '@/contexts/AuthContext';
+import { fetchCarbonTotalsByYearAndMonth } from "@/lib/api/extractCarbonBreakdown";
+import type { CarbonActivity } from "@/types/carbon";
+
 
 
 import {
@@ -23,7 +26,9 @@ interface CarbonDataItem {
   month: string;
   totalFootprint: number;
 }
-console.log(fetchCarbonTotalsByYear); // should log a function
+
+type ActivityType = CarbonActivity["activityType"];
+
 
 ChartJS.register(
   CategoryScale,
@@ -40,16 +45,67 @@ const ChartToggle = () => {
 
   const { user } = useAuth();
   const companyId = user?.companyId;
-  
-  console.log("Company ID:", companyId); // should
+  if (!companyId) return;
+  const [selectedMonthIndex, setSelectedMonthIndex] = useState<number | null>(null);
+  const [pieData, setPieData] = useState<number[]>([0, 0, 0, 0, 0]); // Placeholder
+
+  const handleChartClick = (event: any, elements: any[]) => {
+    if (!elements.length) return;
+
+    const index = elements[0].index;
+    setSelectedMonthIndex(index);
+    fetchPieBreakdownData(index + 1);
+  };
+
+
+
 
   const [chartData, setChartData] = useState<any>({
     datasets: [],
   });
 
+
+
   const [chartOptions, setChartOptions] = useState({});
   const [isLineChart, setIsLineChart] = useState(false);
   const [selectedYear, setSelectedYear] = useState("2024"); // ✅ moved outside useEffect
+
+  const fetchPieBreakdownData = async (month: number) => {
+    if (!companyId) return;
+    try {
+      const response = await fetchCarbonTotalsByYearAndMonth(companyId, selectedYear, String(month));
+
+      const breakdown: Record<ActivityType, number> = {
+        ELECTRICITY: 0,
+        FUEL: 0,
+        WATER: 0,
+        WASTE: 0,
+      };
+
+
+
+      for (const item of response) {
+        const { activityType, footprint } = item;
+        if (activityType in breakdown) {
+          breakdown[activityType as ActivityType] += footprint;
+        }
+      }
+
+      const orderedData = [
+        breakdown.ELECTRICITY,
+        breakdown.FUEL,
+        breakdown.WATER,
+        breakdown.WASTE,
+      ];
+
+      setPieData(orderedData);
+      console.log("Breakdown Data:", orderedData);
+    } catch (error) {
+      console.error("Error fetching breakdown:", error);
+    }
+  };
+
+
 
 
   const handleYearChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -103,6 +159,9 @@ const ChartToggle = () => {
     updateChartForYear(selectedYear);
   }, []);
 
+
+
+
   return (
     <>
       <div className="w-full md:col-span-2 m-auto p-4 border rounded-lg bg-white space-y-4">
@@ -128,15 +187,25 @@ const ChartToggle = () => {
 
         <div className="relative lg:h-[70vh] h-[50vh]">
           {isLineChart ? (
-            <Line data={chartData} options={chartOptions} />
+            <Line
+              data={chartData}
+              options={{
+                ...chartOptions,
+                onClick: handleChartClick,
+              }} />
           ) : (
-            <Bar data={chartData} options={chartOptions} />
-          )}
+            <Bar
+              data={chartData}
+              options={{
+                ...chartOptions,
+                onClick: handleChartClick,
+              }}
+            />)}
         </div>
       </div>
 
       <div className="flex flex-col items-center">
-        <PieChart />
+        <PieChart dataValues={pieData} />
       </div>
     </>
   );

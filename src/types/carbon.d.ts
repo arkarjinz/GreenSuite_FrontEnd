@@ -21,3 +21,6 @@ export type CarbonInput = {
   month?: string;
   year?: string;
 };
+
+//Htet Htet
+export type ActivityType = CarbonActivity["activityType"];

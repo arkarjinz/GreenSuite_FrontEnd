@@ -9,7 +9,7 @@ import {
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
-const PieChart = () => {
+const PieChart = ({ dataValues }: { dataValues: number[] }) => {
   const labels = ['Electricity', 'Fuels', 'Water', 'Waste', 'Recycle'];
   const colors = [
     'rgba(255, 99, 132, 0.6)',   // Electricity
@@ -24,7 +24,7 @@ const PieChart = () => {
     datasets: [
       {
         label: 'Emissions Breakdown (%)',
-        data: [35, 25, 15, 15, 10],
+        data: dataValues,
         backgroundColor: colors,
         borderColor: colors.map(c => c.replace('0.6', '1')),
         borderWidth: 1,
@@ -32,34 +32,40 @@ const PieChart = () => {
     ],
   };
 
+  const total = dataValues.reduce((sum, value) => sum + value, 0);
+
   const options = {
     responsive: true,
     plugins: {
-      legend: { display: false }, // We use a custom legend
-      title: { display: false },  // Disable chart title
-    },
+      legend: { display: false },
+      title: { display: false },
+      tooltip: {
+        callbacks: {
+          label: function (tooltipItem: any) {
+            const value = tooltipItem.raw;
+            const percent = ((value / total) * 100).toFixed(2);
+            const label = data.labels[tooltipItem.dataIndex];
+            return `${label}: ${value.toLocaleString()} (${percent}%)`;
+          }
+        }
+      }
+    }
   };
+
 
   return (
     <div className="w-full max-w-4xl mx-auto p-6 bg-white rounded-lg shadow">
-      {/* Custom header */}
       <h2 className="text-xl font-semibold text-gray-800 mb-6 text-center">
         Carbon Emissions Breakdown
       </h2>
-
-      {/* Flex layout for pie and legend */}
       <div className="flex flex-col md:flex-row gap-8 items-center justify-center">
         <div className="w-64 h-64">
           <Pie data={data} options={options} />
         </div>
-
         <div className="flex flex-col gap-3">
           {labels.map((label, index) => (
             <div key={label} className="flex items-center gap-3">
-              <div
-                className="w-4 h-4 rounded-full"
-                style={{ backgroundColor: colors[index] }}
-              />
+              <div className="w-4 h-4 rounded-full" style={{ backgroundColor: colors[index] }} />
               <span className="text-gray-700 font-medium">{label}</span>
             </div>
           ))}
@@ -68,5 +74,6 @@ const PieChart = () => {
     </div>
   );
 };
+
 
 export default PieChart;
