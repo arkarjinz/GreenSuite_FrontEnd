@@ -4,12 +4,12 @@ import { Lightbulb, Fuel, Droplet, Trash2 } from "lucide-react";
 import Button from "@/components/ui/Button";
 import { checkGoals, saveGoal ,GoalCheckRequest} from "@/lib/api/goal";
 // Example: Replace with actual auth method or context
-function getUser() {
+/*function getUser() {
   if (typeof window !== "undefined") {
     return JSON.parse(localStorage.getItem("user") || "{}");
   }
   return {};
-}
+}*/
 
 type GoalKey = "electricity" | "fuel" | "water" | "waste";
 
@@ -45,8 +45,8 @@ export default function SustainabilityGoals() {
 
   const [previousValues, setPreviousValues] = useState<Record<GoalKey, number>>({...values});
 //const [responseMessage, setResponseMessage] = useState<string | null>(null);
-  const user = getUser();
-  const companyId = user?.companyId;
+  /*const user = getUser();
+  const companyId = user?.companyId;*/
   const handleChange = (key: GoalKey, value: number) => {
     setPreviousValues({...values});
     setValues(prev => ({ ...prev, [key]: Math.min(100, Math.max(0, value)) }));
@@ -86,13 +86,16 @@ const handleSubmit = async () => {
       },
     };
 
-    const response = await checkGoals(request);
-    setResponseMessage("Goal analysis complete.");
+     await checkGoals(request);
+    
+/*if (!companyId) {
+        setResponseMessage("Company ID not found. Cannot save goals.");
+        return;
+      }
+   // const companyId = "your-company-id"; // get dynamically or hardcode temporarily*/
 
-    const companyId = "your-company-id"; // get dynamically or hardcode temporarily
-
-    await saveGoal(request, companyId); // save after checking
-
+    await saveGoal(request); // save after checking
+setResponseMessage("Goal analysis complete.");
   } catch (error) {
     console.error("Error during goal check or save:", error);
     setResponseMessage("An error occurred while processing your goal.");

@@ -40,10 +40,10 @@ export async function checkGoals(request: GoalCheckRequest): Promise<GoalCheckRe
 
   return response.json();
 }
-export async function saveGoal(request: GoalCheckRequest, companyId: string): Promise<void> {
+export async function saveGoal(request: GoalCheckRequest): Promise<void> {
   const token = localStorage.getItem("token");
 
-  const response = await fetch(`http://localhost:8080/api/carbon/goals/save?companyId=${companyId}`, {
+  const response = await fetch(`http://localhost:8080/api/carbon/goals/save?`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
