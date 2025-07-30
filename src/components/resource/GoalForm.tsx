@@ -58,6 +58,10 @@ export default function SustainabilityGoals() {
 
   
   const [responseMessage, setResponseMessage] = useState<string | null>(null);
+/*const [resultData, setResultData] = useState<{ 
+  message: string; 
+  results: Record<string, { isMet: boolean; reductionAchieved: number; remainingToTarget: number }> 
+} | null>(null);*/
 
   /*const handleSubmit = async () => {
   const selectedMonth = `${year}-${String(month).padStart(2, "0")}`;
@@ -88,11 +92,7 @@ const handleSubmit = async () => {
 
      await checkGoals(request);
     
-/*if (!companyId) {
-        setResponseMessage("Company ID not found. Cannot save goals.");
-        return;
-      }
-   // const companyId = "your-company-id"; // get dynamically or hardcode temporarily*/
+
 
     await saveGoal(request); // save after checking
 setResponseMessage("Goal analysis complete.");
