@@ -31,7 +31,8 @@ export default function SustainabilityGoals() {
 
   // Add these state variables
   const [year, setYear] = useState(currentYear);
-  const [month, setMonth] = useState(new Date().getMonth() + 1); // month 1-12
+  //const [month, setMonth] = useState(new Date().getMonth() + 1); // month 1-12
+  const [month, setMonth] = useState<string>(String(new Date().getMonth() + 1).padStart(2, "0")); // "01" to "12"
   const [submittedMonths, setSubmittedMonths] = useState<string[]>([]);
 
   // Fetch submitted months whenever the year changes
@@ -46,8 +47,9 @@ export default function SustainabilityGoals() {
       const allMonths = [...Array(12).keys()].map(m => `${year}-${String(m + 1).padStart(2, "0")}`);
       const firstAvailable = allMonths.find(m => !months.includes(m));
       if (firstAvailable) {
-        const firstMonthNumber = parseInt(firstAvailable.split("-")[1], 10);
-        setMonth(firstMonthNumber);
+       // const firstMonth = parseInt(firstAvailable.split("-")[1], 10);
+        const firstMonth = firstAvailable.split("-")[1]; // "07", etc.
+       setMonth(firstMonth);
       }
       } catch (err) {
         console.error("Failed to load submitted months", err);
@@ -154,8 +156,8 @@ console.log(`🔍 Checking ${category}:`, {
 };*/
 const handleSubmit = async () => {
   try {
-    const selectedMonth = `${year}-${String(month).padStart(2, "0")}`;
-
+    //const selectedMonth = `${year}-${String(month).padStart(2, "0")}`;
+    const selectedMonth = `${year}-${month}`; // month already zero-padded string
     const request: GoalCheckRequest = {
       selectedMonth,
       targetPercentByCategory: {
@@ -208,7 +210,8 @@ setResponseMessage("Goal analysis complete.");
 {/* Month */}
 <select
   value={month}
-  onChange={(e) => setMonth(parseInt(e.target.value))}
+  //onChange={(e) => setMonth(parseInt(e.target.value))}
+  onChange={(e) => setMonth(e.target.value)}
   className="border border-gray-300 rounded px-3 py-2"
 >
   {[...Array(12).keys()].map((m) => {
