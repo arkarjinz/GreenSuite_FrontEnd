@@ -11,15 +11,25 @@ export interface GoalCheckRequest {
 }
 
 export interface CategoryResult {
-  isMet: boolean;
+  //isMet: boolean;
+  goalMet: boolean;
   achievedPercent: number;
   remainingPercent: number;
 }
-
+// Adjust your interface in goal.ts
 export interface GoalCheckResponse {
   message: string;
   results: Record<string, CategoryResult>;
+  electricityGoalMet: boolean;
+  fuelGoalMet: boolean;
+  waterGoalMet: boolean;
+  wasteGoalMet: boolean;
 }
+
+/*export interface GoalCheckResponse {
+  message: string;
+  results: Record<string, CategoryResult>;
+}*/
 
 export async function checkGoals(request: GoalCheckRequest): Promise<GoalCheckResponse> {
   const token = localStorage.getItem("token");

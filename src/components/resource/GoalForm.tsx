@@ -2,14 +2,10 @@
 import {useState,  JSX} from "react";
 import { Lightbulb, Fuel, Droplet, Trash2 } from "lucide-react";
 import Button from "@/components/ui/Button";
-import { checkGoals, saveGoal ,GoalCheckRequest} from "@/lib/api/goal";
-// Example: Replace with actual auth method or context
-/*function getUser() {
-  if (typeof window !== "undefined") {
-    return JSON.parse(localStorage.getItem("user") || "{}");
-  }
-  return {};
-}*/
+import { checkGoals, saveGoal ,GoalCheckRequest,GoalCheckResponse} from "@/lib/api/goal";
+import { useEffect } from "react";
+
+
 
 type GoalKey = "electricity" | "fuel" | "water" | "waste";
 
@@ -42,6 +38,48 @@ export default function SustainabilityGoals() {
     water: 0,
     waste: 0,
   });
+  
+  //function buildSummaryMessage(results: GoalCheckResponse["results"]) {
+  function buildSummaryMessage(resultData: GoalCheckResponse) {
+  const metGoals: string[] = [];
+  const notMetGoals: string[] = [];
+
+  /*for (const [category, result] of Object.entries(results)) {
+    if (result.isMet) metGoals.push(category);
+    else notMetGoals.push(category);
+  }*///old one (for general goal met)
+//for (const [category, result] of Object.entries(results)) {
+  for (const category of Object.keys(resultData.results)) {
+// The field name for goal met flag, e.g. electricity => electricityGoalMet
+ // const goalMetField = `${category}GoalMet` as keyof GoalCheckResponse;
+
+  // @ts-ignore - dynamic property access
+  //const isGoalMet = result[goalMetField];
+   //const isGoalMet = resultData[goalMetField] as boolean | undefined;
+   const isGoalMet = resultData.results[category].goalMet;
+
+console.log(`🔍 Checking ${category}:`, {
+    //goalMetField,
+    isGoalMet,
+    remaining: resultData.results[category]?.remainingPercent,
+  });
+  if (isGoalMet) metGoals.push(category);
+  else notMetGoals.push(category);
+}
+
+  // Capitalize categories nicely
+  const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+  const formatList = (list: string[]) => list.map(capitalize).join(", ");
+
+  if (metGoals.length === 0) {
+    return "Unfortunately, none of your goals have been met yet.";
+  } else if (notMetGoals.length === 0) {
+    return "Congratulations! All your goals have been met.";
+  } else {
+    return `Congratulations! Your goal for ${formatList(metGoals)} has been met, but your goal for ${formatList(notMetGoals)} is not met.`;
+  }
+}
+
 
   const [previousValues, setPreviousValues] = useState<Record<GoalKey, number>>({...values});
 //const [responseMessage, setResponseMessage] = useState<string | null>(null);
@@ -58,10 +96,15 @@ export default function SustainabilityGoals() {
 
   
   const [responseMessage, setResponseMessage] = useState<string | null>(null);
+
 /*const [resultData, setResultData] = useState<{ 
   message: string; 
-  results: Record<string, { isMet: boolean; reductionAchieved: number; remainingToTarget: number }> 
+  results: Record<string, { 
+    isGoalMet: boolean; 
+    remainingPercent: number; 
+  }>
 } | null>(null);*/
+ const [resultData, setResultData] = useState<GoalCheckResponse | null>(null);
 
   /*const handleSubmit = async () => {
   const selectedMonth = `${year}-${String(month).padStart(2, "0")}`;
@@ -90,11 +133,14 @@ const handleSubmit = async () => {
       },
     };
 
-     await checkGoals(request);
-    
-
-
+     const response=await checkGoals(request);
+   console.log("✅ Raw GoalCheckResponse from backend:", response);
+     setResultData(response);
     await saveGoal(request); // save after checking
+    setResponseMessage("Goal analysis complete.");
+
+
+    
 setResponseMessage("Goal analysis complete.");
   } catch (error) {
     console.error("Error during goal check or save:", error);
@@ -194,6 +240,76 @@ setResponseMessage("Goal analysis complete.");
   <p className="mt-4 text-center text-sm text-green-600">{responseMessage}</p>
 )}
         </div>
+        {/* Goal Summary Display */}
+        
+{resultData && (
+  
+  <div className="mt-6 bg-white border border-gray-200 rounded-xl shadow-sm p-6 space-y-4">
+    
+    <h3 className="text-lg font-semibold text-gray-800">Goal Summary</h3>
+{/* Add the summary message here */}
+    <p className="text-md font-medium text-gray-700 mb-4">
+      {/*buildSummaryMessage(resultData.results)*/}
+      
+      {buildSummaryMessage(resultData)}
+    </p>
+    {Object.entries(resultData.results).map(([category, result]) => {
+      
+    const isGoalMet = result.goalMet;
+
+console.log(`🖼️ Rendering result:`, {
+    category,
+   // goalMetField,
+    isGoalMet,
+    result,
+  });
+    // Check if user inputted a goal (assuming zero means not selected)
+  const userSelectedValue = values[category as GoalKey]; // your current slider value for that category
+
+  // Determine display message
+  let displayMessage;
+  if (userSelectedValue === 0) {
+    displayMessage = "Not selected for goal";
+  } else if (result === undefined) {
+    displayMessage = "No data available";
+  } else if (isGoalMet) {
+    displayMessage = "Goal Met";
+  } else {
+    displayMessage = `Need ${result.remainingPercent.toFixed(2)}% more`;
+  }
+      
+  
+
+  return (
+    <div
+        key={category}
+        className="flex justify-between items-center border-t pt-4 first:border-t-0 first:pt-0"
+      >
+        <span className="capitalize text-gray-600">{category}</span>
+        <span
+          className={`font-medium ${
+    userSelectedValue === 0
+      ? "text-gray-500"
+      : isGoalMet
+      ? "text-green-600"
+      : "text-red-500"
+  }`}
+>
+  {displayMessage}
+        </span>
+         </div>
+         
+  );
+})}
+
+    {resultData.message.includes("no previous data") && (
+      <p className="text-sm text-yellow-600 font-medium mt-4">
+        No previous month data available. Please add data for comparison.
+      </p>
+    )}
+  </div>
+)}
+
       </div>
     </div>
   );
