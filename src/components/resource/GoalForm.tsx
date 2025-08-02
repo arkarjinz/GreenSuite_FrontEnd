@@ -4,7 +4,7 @@ import { Lightbulb, Fuel, Droplet, Trash2 } from "lucide-react";
 import Button from "@/components/ui/Button";
 import { checkGoals, saveGoal ,GoalCheckRequest,GoalCheckResponse} from "@/lib/api/goal";
 import { useEffect } from "react";
-
+import { getSubmittedGoalMonths } from "@/lib/api/goal";
 
 
 type GoalKey = "electricity" | "fuel" | "water" | "waste";
@@ -32,6 +32,31 @@ export default function SustainabilityGoals() {
   // Add these state variables
   const [year, setYear] = useState(currentYear);
   const [month, setMonth] = useState(new Date().getMonth() + 1); // month 1-12
+  const [submittedMonths, setSubmittedMonths] = useState<string[]>([]);
+
+  // Fetch submitted months whenever the year changes
+  useEffect(() => {
+    async function fetchSubmitted() {
+      try {
+        const months = await getSubmittedGoalMonths(year);
+        console.log("Submitted months for year", year, ":", months);
+
+        setSubmittedMonths(months);
+         // Auto-select first non-disabled month
+      const allMonths = [...Array(12).keys()].map(m => `${year}-${String(m + 1).padStart(2, "0")}`);
+      const firstAvailable = allMonths.find(m => !months.includes(m));
+      if (firstAvailable) {
+        const firstMonthNumber = parseInt(firstAvailable.split("-")[1], 10);
+        setMonth(firstMonthNumber);
+      }
+      } catch (err) {
+        console.error("Failed to load submitted months", err);
+        setSubmittedMonths([]);
+      }
+    }
+    fetchSubmitted();
+  }, [year]);
+  
   const [values, setValues] = useState<Record<GoalKey, number>>({
     electricity: 0,
     fuel: 0,
@@ -186,11 +211,26 @@ setResponseMessage("Goal analysis complete.");
   onChange={(e) => setMonth(parseInt(e.target.value))}
   className="border border-gray-300 rounded px-3 py-2"
 >
-  {[...Array(12).keys()].map((m) => (
-    <option key={m + 1} value={m + 1}>
+  {[...Array(12).keys()].map((m) => {
+    //const monthStr = `${year}-${String(m + 1).padStart(2, "0")}`;
+    //const isSubmitted = submittedMonths.includes(monthStr);
+    const monthOnly = String(m + 1).padStart(2, "0");
+const isSubmitted = submittedMonths.includes(monthOnly);
+
+    console.log("[DEBUG] Year selected:", year);
+console.log("[DEBUG] Month list:", [...Array(12).keys()].map((m) => String(m + 1).padStart(2, "0")));
+console.log("[DEBUG] Disabled months from backend:", submittedMonths);
+
+    return (
+    <option //key={m + 1} value={m + 1}
+    key={monthOnly}
+    value={monthOnly}
+    disabled={isSubmitted}
+        title={isSubmitted ? "Goal already submitted for this month" : ""}>
       {String(m + 1).padStart(2, "0")}
     </option>
-  ))}
+    );
+})}
 </select>
 
         </div>
@@ -235,7 +275,7 @@ setResponseMessage("Goal analysis complete.");
             disabled={JSON.stringify(values) === JSON.stringify(previousValues)}
             className="px-8 py-2 bg-gray-200 text-gray-800 hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            UNDO
+            RESET
           </Button>
           <Button
             onClick={handleSubmit}

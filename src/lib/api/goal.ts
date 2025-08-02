@@ -67,3 +67,23 @@ export async function saveGoal(request: GoalCheckRequest): Promise<void> {
     throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
   }
 }
+//to disable the selected month in the dropdown
+export async function getSubmittedGoalMonths(year:number): Promise<string[]> {
+  const token = localStorage.getItem("token");
+
+  // You can send year as a query param if needed, or just fetch all submitted months
+  const response = await fetch(`http://localhost:8080/api/carbon/goals/submittedMonths?year=${year}`, {
+    method: "GET",
+    headers: {
+      ...(token && { Authorization: `Bearer ${token}` }),
+    },
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+  }
+
+  const data: string[] = await response.json();
+  return data;
+}
