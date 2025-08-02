@@ -44,28 +44,36 @@ export default function SustainabilityGoals() {
   const metGoals: string[] = [];
   const notMetGoals: string[] = [];
 
-  /*for (const [category, result] of Object.entries(results)) {
-    if (result.isMet) metGoals.push(category);
-    else notMetGoals.push(category);
-  }*///old one (for general goal met)
-//for (const [category, result] of Object.entries(results)) {
-  for (const category of Object.keys(resultData.results)) {
-// The field name for goal met flag, e.g. electricity => electricityGoalMet
- // const goalMetField = `${category}GoalMet` as keyof GoalCheckResponse;
+  
 
-  // @ts-ignore - dynamic property access
-  //const isGoalMet = result[goalMetField];
-   //const isGoalMet = resultData[goalMetField] as boolean | undefined;
+for (const category of Object.keys(resultData.results)) {
+   if(values[category as GoalKey]===0) continue;//skip the goal that the slide is 0
    const isGoalMet = resultData.results[category].goalMet;
 
 console.log(`🔍 Checking ${category}:`, {
     //goalMetField,
     isGoalMet,
+     userSet: values[category as GoalKey],
     remaining: resultData.results[category]?.remainingPercent,
   });
   if (isGoalMet) metGoals.push(category);
   else notMetGoals.push(category);
 }
+/*for (const category of Object.keys(resultData.results)) {
+  // Skip categories the user did not select (e.g., slider was left at 0)
+  if (values[category as GoalKey] === 0) continue;
+
+  const isGoalMet = resultData.results[category].goalMet;
+
+  console.log(`🔍 Checking ${category}:`, {
+    isGoalMet,
+    remaining: resultData.results[category]?.remainingPercent,
+  });
+
+  if (isGoalMet) metGoals.push(category);
+  else notMetGoals.push(category);
+}
+*/
 
   // Capitalize categories nicely
   const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
@@ -247,6 +255,12 @@ setResponseMessage("Goal analysis complete.");
   <div className="mt-6 bg-white border border-gray-200 rounded-xl shadow-sm p-6 space-y-4">
     
     <h3 className="text-lg font-semibold text-gray-800">Goal Summary</h3>
+{/* Show exact backend message here */}
+    <p className="text-md font-medium text-gray-700 mb-4">
+      {resultData.message}
+    </p>
+
+
 {/* Add the summary message here */}
     <p className="text-md font-medium text-gray-700 mb-4">
       {/*buildSummaryMessage(resultData.results)*/}
@@ -302,11 +316,7 @@ console.log(`🖼️ Rendering result:`, {
   );
 })}
 
-    {resultData.message.includes("no previous data") && (
-      <p className="text-sm text-yellow-600 font-medium mt-4">
-        No previous month data available. Please add data for comparison.
-      </p>
-    )}
+    
   </div>
 )}
 
