@@ -62,7 +62,7 @@ const AuthenticatedNav = ({ user, logout }: { user: AuthUser | null; logout: () 
             <NavLink href="/dashboard">Dashboard</NavLink>
             <NavLink href="/resource/input">Carbon Calculator</NavLink>
             <NavLink href="/resource/goal">Goal Track</NavLink>
-            <NavLink href="/reports">Reports</NavLink>
+            <NavLink href="/report">Reports</NavLink>
             {user?.companyRole === 'OWNER' && (
                 <NavLink href="/dashboard/owner/users">Manage Users</NavLink>
             )}
