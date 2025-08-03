@@ -234,7 +234,7 @@ const handleSubmit = async () => {
         </div>
       )}
 {/* Region Selection - New */}
-      <div className="mb-6 bg-[#43a243] p-6 rounded-[28px] transition-transform transition-shadow duration-300
+      <div className="mb-6 bg-white p-6 rounded-[28px] transition-transform transition-shadow duration-300
              hover:-translate-y-1.5 hover:shadow-lg hover:cursor-pointer">
         <label className="flex items-center font-semibold gap-2 text-gray-900 text-lg mb-3 drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.2)]">
           <Globe2 className="text-black-700" size={24} />
@@ -243,7 +243,7 @@ const handleSubmit = async () => {
         <select
           value={formData.region}
           onChange={(e) => handleSelectChange("region", e.target.value as Region)}
-          className="rounded-[25px] border-4 border-[#faf6e9] outline-none px-5 py-3 text-lg w-full shadow-[inset_0_2px_4px_0_rgba(0,0,0,0.05)]
+          className="rounded-[25px] border-4 border-[#43a243] outline-none px-5 py-3 text-lg w-full shadow-[inset_0_2px_4px_0_rgba(0,0,0,0.05)]
             hover:shadow-[inset_0_2px_8px_0_rgba(0,0,0,0.1)]"
         >
           <option value="us">United States (0.82 kg/kWh)</option>
@@ -261,7 +261,7 @@ const handleSubmit = async () => {
       {/* ▲▲▲ REGION SELECTOR ENDS ▲▲▲ */}
       <div className="flex gap-6 mb-6">
       {/*Year Selection*/}
-      <div className="flex-1 bg-[#43a243] p-6 rounded-[28px] transition-transform transition-shadow duration-300 hover:-translate-y-1.5 hover:shadow-lg hover:cursor-pointer">
+      <div className="flex-1 bg-white p-6 rounded-[28px] transition-transform transition-shadow duration-300 hover:-translate-y-1.5 hover:shadow-lg hover:cursor-pointer">
   <label className="flex items-center font-semibold gap-2 text-gray-900 text-lg mb-3 drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.2)]">
     <Calendar className="text-black-700" size={24} /> {/* Add Calendar to your lucide-react imports */}
     Reporting Year
@@ -269,7 +269,7 @@ const handleSubmit = async () => {
   <select
     value={formData.year}
     onChange={(e) => handleSelectChange("year", e.target.value)}
-    className="rounded-[25px] border-4 border-[#faf6e9] outline-none px-5 py-3 text-lg w-full shadow-[inset_0_2px_4px_0_rgba(0,0,0,0.05)] hover:shadow-[inset_0_2px_8px_0_rgba(0,0,0,0.1)]"
+    className="rounded-[25px] border-4 border-[#43a243] outline-none px-5 py-3 text-lg w-full shadow-[inset_0_2px_4px_0_rgba(0,0,0,0.05)] hover:shadow-[inset_0_2px_8px_0_rgba(0,0,0,0.1)]"
   >
     {Array.from({ length: 10 }, (_, i) => {
       const yearOption = (new Date().getFullYear() - 5 + i).toString(); // show 5 years back and 4 years ahead
@@ -282,7 +282,7 @@ const handleSubmit = async () => {
   </select>
 </div>
       {/* Month Selection */}
-<div className="flex-1 bg-[#43a243] p-6 rounded-[28px] transition-transform transition-shadow duration-300 hover:-translate-y-1.5 hover:shadow-lg hover:cursor-pointer">
+<div className="flex-1 bg-white p-6 rounded-[28px] transition-transform transition-shadow duration-300 hover:-translate-y-1.5 hover:shadow-lg hover:cursor-pointer">
   <label className="flex items-center font-semibold gap-2 text-gray-900 text-lg mb-3 drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.2)]">
     <Calendar className="text-black-700" size={24} /> {/* Add Calendar to your lucide-react imports */}
     Reporting Month
@@ -290,7 +290,7 @@ const handleSubmit = async () => {
   <select
     value={formData.month}
     onChange={(e) => handleSelectChange("month", e.target.value as Month)}
-    className="rounded-[25px] border-4 border-[#faf6e9] outline-none px-5 py-3 text-lg w-full shadow-[inset_0_2px_4px_0_rgba(0,0,0,0.05)] hover:shadow-[inset_0_2px_8px_0_rgba(0,0,0,0.1)]"
+    className="rounded-[25px] border-4 border-[#43a243] outline-none px-5 py-3 text-lg w-full shadow-[inset_0_2px_4px_0_rgba(0,0,0,0.05)] hover:shadow-[inset_0_2px_8px_0_rgba(0,0,0,0.1)]"
   >
     {Array.from({ length: 12 }, (_, i) => {
       const monthName = new Date(0, i).toLocaleString('default', { month: 'long' });
@@ -308,7 +308,7 @@ const handleSubmit = async () => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
         {/* Electricity */}
         <div
-          className="bg-[#43a243] p-8 rounded-[28px] flex flex-col min-h-[180px] gap-4
+          className="bg-white p-8 rounded-[28px] flex flex-col min-h-[180px] gap-4
                      transition-transform transition-shadow duration-300
                      hover:-translate-y-1.5 hover:shadow-lg hover:cursor-pointer"
         >
@@ -321,7 +321,7 @@ const handleSubmit = async () => {
             min="0"
             value={formData.electricity}
             onChange={(e) => handleChange("electricity", e.target.value)}
-            className="rounded-[25px] border-4 border-[#faf6e9] outline-none
+            className="rounded-[25px] border-4 border-[#43a243] outline-none
                        px-5 py-3 text-lg
                        transition-transform transition-shadow duration-200
                        hover:scale-[1.03] hover:shadow-md"
@@ -331,7 +331,7 @@ const handleSubmit = async () => {
 
         {/* Water */}
         <div
-          className="bg-[#43a243] p-8 rounded-[28px] flex flex-col min-h-[180px] gap-4
+          className="bg-white p-8 rounded-[28px] flex flex-col min-h-[180px] gap-4
                      transition-transform transition-shadow duration-300
                      hover:-translate-y-1.5 hover:shadow-lg hover:cursor-pointer"
         >
@@ -344,7 +344,7 @@ const handleSubmit = async () => {
             min="0"
             value={formData.water}
             onChange={(e) => handleChange("water", e.target.value)}
-            className="rounded-[25px] border-4 border-[#faf6e9] outline-none
+            className="rounded-[25px] border-4 border-[#43a243] outline-none
                        px-5 py-3 text-lg
                    
                        transition-transform transition-shadow duration-200
@@ -355,7 +355,7 @@ const handleSubmit = async () => {
 
         {/* Fuel */}
         <div
-          className="bg-[#43a243] p-8 rounded-[28px] flex flex-col min-h-[180px] gap-4
+          className="bg-white p-8 rounded-[28px] flex flex-col min-h-[180px] gap-4
                      transition-transform transition-shadow duration-300
                      hover:-translate-y-1.5 hover:shadow-lg hover:cursor-pointer"
         >
@@ -366,7 +366,7 @@ const handleSubmit = async () => {
           <select
             value={formData.fuelType}
             onChange={(e) => handleSelectChange("fuelType", e.target.value)}
-            className="rounded-[25px] border-4 border-[#faf6e9] outline-none px-5 py-3 text-lg mb-2 shadow-[inset_0_2px_4px_0_rgba(0,0,0,0.05)]
+            className="rounded-[25px] border-4 border-[#43a243] outline-none px-5 py-3 text-lg mb-2 shadow-[inset_0_2px_4px_0_rgba(0,0,0,0.05)]
             hover:shadow-[inset_0_2px_8px_0_rgba(0,0,0,0.1)]"
           >
             <option value="gasoline">Gasoline</option>
@@ -377,7 +377,7 @@ const handleSubmit = async () => {
 <select
   value={formData.unit || "LITERS"}
   onChange={(e) => handleSelectChange("unit", e.target.value)}
-  className="rounded-[25px] border-4 border-[#faf6e9] outline-none px-5 py-3 text-lg mb-2"
+  className="rounded-[25px] border-4 border-[#43a243] outline-none px-5 py-3 text-lg mb-2"
 >
   <option value="LITERS">Liters</option>
   <option value="CUBIC_METERS">Cubic Meters</option>
@@ -387,7 +387,7 @@ const handleSubmit = async () => {
             min="0"
             value={formData.fuel}
             onChange={(e) => handleChange("fuel", e.target.value)}
-            className="rounded-[25px] border-4 border-[#faf6e9] outline-none
+            className="rounded-[25px] border-4 border-[#43a243] outline-none
                        px-5 py-3 text-lg
                        transition-transform transition-shadow duration-200
                        hover:scale-[1.03] hover:shadow-md"
@@ -397,7 +397,7 @@ const handleSubmit = async () => {
 
         {/* Waste */}
         <div
-          className="bg-[#43a243] p-8 rounded-[28px] flex flex-col min-h-[180px] gap-4
+          className="bg-white p-8 rounded-[28px] flex flex-col min-h-[180px] gap-4
                      transition-transform transition-shadow duration-300
                      hover:-translate-y-1.5 hover:shadow-lg hover:cursor-pointer"
         >
@@ -408,7 +408,7 @@ const handleSubmit = async () => {
           <select
             value={formData.disposalMethod}
             onChange={(e) => handleSelectChange("disposalMethod", e.target.value)}
-            className="rounded-[25px] border-4 border-[#faf6e9] outline-none px-5 py-3 text-lg mb-2 shadow-[inset_0_2px_4px_0_rgba(0,0,0,0.05)]
+            className="rounded-[25px] border-4 border-[#43a243] outline-none px-5 py-3 text-lg mb-2 shadow-[inset_0_2px_4px_0_rgba(0,0,0,0.05)]
             hover:shadow-[inset_0_2px_8px_0_rgba(0,0,0,0.1)]"
           >
             <option value="recycled">Recycled</option>
@@ -420,7 +420,7 @@ const handleSubmit = async () => {
             min="0"
             value={formData.waste}
             onChange={(e) => handleChange("waste", e.target.value)}
-            className="rounded-[25px] border-4 border-[#faf6e9] outline-none
+            className="rounded-[25px] border-4 border-[#43a243] outline-none
                        px-5 py-3 text-lg
                        transition-transform transition-shadow duration-200
                        hover:scale-[1.03] hover:shadow-md"

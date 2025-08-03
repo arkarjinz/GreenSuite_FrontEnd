@@ -8,15 +8,14 @@ import GoalForm from "@/components/resource/GoalForm";
 export default function GoalPage() {
     return (
         
-            <main className="relative min-h-screen overflow-hidden">
-            {/* Background image layer with opacity */}
-            <div
-                className="absolute inset-0 bg-cover bg-center opacity-40 z-0"
-                style={{ backgroundImage: "url('/goal.jpg')" }}
-            />
+            <main className="min-h-screen bg-gradient-to-t from-green-600 to-zinc-50">
+
+    
+            <div className="min-h-screen">
             <section className="relative z-10 p-4">
                 <GoalForm />
             </section>
+            </div>
         </main>
     );
 }
