@@ -15,6 +15,7 @@ export interface CategoryResult {
   goalMet: boolean;
   achievedPercent: number;
   remainingPercent: number;
+  dataAvailable?: boolean;
 }
 // Adjust your interface in goal.ts
 export interface GoalCheckResponse {

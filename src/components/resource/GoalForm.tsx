@@ -74,8 +74,11 @@ export default function SustainabilityGoals() {
   
 
 for (const category of Object.keys(resultData.results)) {
-   if(values[category as GoalKey]===0) continue;//skip the goal that the slide is 0
-   const isGoalMet = resultData.results[category].goalMet;
+    // Skip if user did not set a goal
+  if(values[category as GoalKey]===0) continue;//skip the goal that the slide is 0
+   // Skip if data not available for this category
+    if (resultData.results[category]?.dataAvailable === false) continue;
+  const isGoalMet = resultData.results[category].goalMet;
 
 console.log(`🔍 Checking ${category}:`, {
     //goalMetField,
@@ -325,9 +328,10 @@ console.log(`🖼️ Rendering result:`, {
 
   // Determine display message
   let displayMessage;
+  const dataAvailable = result.dataAvailable ?? true; // assume true if undefined
   if (userSelectedValue === 0) {
     displayMessage = "Not selected for goal";
-  } else if (result === undefined) {
+  } else if (!dataAvailable) {
     displayMessage = "No data available";
   } else if (isGoalMet) {
     displayMessage = "Goal Met";
