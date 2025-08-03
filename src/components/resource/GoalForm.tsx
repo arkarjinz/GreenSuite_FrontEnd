@@ -245,8 +245,8 @@ console.log("[DEBUG] Disabled months from backend:", submittedMonths);
           {goals.map((goal) => (
             <div 
               key={goal.key}
-              className="bg-[#43a243] p-6 rounded-xl shadow-sm border-3 border-[#65b04f] 
-              hover:shadow-md hover:border-[#3a8f3a] hover:scale-[1.02] transition-all duration-300"
+              className="bg-white p-6 rounded-xl shadow-sm  
+              hover:shadow-md hover:border-[#43a243] hover:scale-[1.02] transition-all duration-300"
             >
               <div className="flex items-center space-x-4">
                 <div className="bg-green-100 p-3 rounded-full">
@@ -298,7 +298,7 @@ console.log("[DEBUG] Disabled months from backend:", submittedMonths);
         
 {resultData && (
   
-  <div className="mt-6 bg-[#7fca7f] border-3 border-[#43a243] rounded-xl shadow-sm p-6 space-y-4">
+  <div className="mt-6 bg-white border-3 border-[#43a243] rounded-xl shadow-sm p-6 space-y-4">
     
     <h3 className="text-2xl font-bold text-black-800 drop-shadow-[0_2px_1px_rgba(0,0,0,0.1)]">Goal Summary</h3>
 {/* Show exact backend message here */}
