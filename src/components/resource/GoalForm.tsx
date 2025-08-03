@@ -10,10 +10,10 @@ import { getSubmittedGoalMonths } from "@/lib/api/goal";
 type GoalKey = "electricity" | "fuel" | "water" | "waste";
 
 const goals: { icon: JSX.Element; label: string; key: GoalKey }[] = [
-  { icon: <Lightbulb size={40} />, label: "Electricity Usage", key: "electricity" },
-  { icon: <Fuel size={40} />, label: "Fuel Consumption", key: "fuel" },
-  { icon: <Droplet size={40} />, label: "Water Consumption", key: "water" },
-  { icon: <Trash2 size={40} />, label: "Waste Produced", key: "waste" },
+  { icon: <div className="drop-shadow-[0_2px_1px_rgba(0,0,0,0.1)]"><Lightbulb size={40} /></div>, label: "Electricity Usage", key: "electricity" },
+  { icon: <div className="drop-shadow-[0_2px_1px_rgba(0,0,0,0.1)]"><Fuel size={40} /></div>, label: "Fuel Consumption", key: "fuel" },
+  { icon: <div className="drop-shadow-[0_2px_1px_rgba(0,0,0,0.1)]"><Droplet size={40} /></div>, label: "Water Consumption", key: "water" },
+  { icon: <div className="drop-shadow-[0_2px_1px_rgba(0,0,0,0.1)]"><Trash2 size={40} /></div>, label: "Waste Produced", key: "waste" },
 ];
 function getCurrentYear() {
   return new Date().getFullYear();
@@ -188,20 +188,20 @@ setResponseMessage("Goal analysis complete.");
 
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
+    <div className="min-h-screen flex flex-col items-center justify-center p-4">
       <div className="max-w-4xl w-full space-y-8">
         {/* Header */}
         <div className="text-center">
           {/*<h1 className="text-2xl font-bold text-gray-900 mb-2">GREENSUITE</h1>*/}
-          <h2 className="text-xl font-semibold text-gray-700 drop-shadow-[0_2px_1px_rgba(0,0,0,0.1)]">LETS SET YOUR SUSTAINABILITY GOALS!</h2>
+          <h2 className="text-xl font-semibold text-black drop-shadow-[0_2px_1px_rgba(0,0,0,0.1)]">REVIEW YOUR SUSTAINABILITY GOALS!</h2>
         </div>
 {/* Year & Month Selector */}
-        <div className="flex justify-center space-x-4 mb-6">
+        <div className="flex justify-center space-x-4 mb-6 text-black">
           {/* Year */}
 <select
   value={year}
   onChange={(e) => setYear(parseInt(e.target.value))}
-  className="border border-gray-300 rounded px-3 py-2"
+  className="border-3 border-[#43a243] rounded-xl px-5 py-3"
 >
   {getYearsRange(currentYear - 5, currentYear + 1).map((y) => (
     <option key={y} value={y}>
@@ -215,7 +215,7 @@ setResponseMessage("Goal analysis complete.");
   value={month}
   //onChange={(e) => setMonth(parseInt(e.target.value))}
   onChange={(e) => setMonth(e.target.value)}
-  className="border border-gray-300 rounded px-3 py-2"
+  className="border-3 border-[#43a243] rounded-xl px-5 py-3"
 >
   {[...Array(12).keys()].map((m) => {
     //const monthStr = `${year}-${String(m + 1).padStart(2, "0")}`;
@@ -245,16 +245,16 @@ console.log("[DEBUG] Disabled months from backend:", submittedMonths);
           {goals.map((goal) => (
             <div 
               key={goal.key}
-              className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 
-              hover:shadow-md hover:border-green-200 hover:scale-[1.02] transition-all duration-300"
+              className="bg-[#43a243] p-6 rounded-xl shadow-sm border-3 border-[#65b04f] 
+              hover:shadow-md hover:border-[#3a8f3a] hover:scale-[1.02] transition-all duration-300"
             >
               <div className="flex items-center space-x-4">
                 <div className="bg-green-100 p-3 rounded-full">
                   {goal.icon}
                 </div>
                 <div className="flex-1">
-                  <h3 className="font-medium text-gray-900">{goal.label}</h3>
-                  <p className="text-sm text-gray-500">Reduced By:</p>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-1">{goal.label}</h3>
+                  <p className="text-sm text-gray-800">Reduced By:</p>
                   <div className="mt-2 flex items-center space-x-4">
                     <input
                       type="range"
@@ -298,11 +298,11 @@ console.log("[DEBUG] Disabled months from backend:", submittedMonths);
         
 {resultData && (
   
-  <div className="mt-6 bg-white border border-gray-200 rounded-xl shadow-sm p-6 space-y-4">
+  <div className="mt-6 bg-[#7fca7f] border-3 border-[#43a243] rounded-xl shadow-sm p-6 space-y-4">
     
-    <h3 className="text-lg font-semibold text-gray-800">Goal Summary</h3>
+    <h3 className="text-2xl font-bold text-black-800 drop-shadow-[0_2px_1px_rgba(0,0,0,0.1)]">Goal Summary</h3>
 {/* Show exact backend message here */}
-    <p className="text-md font-medium text-gray-700 mb-4">
+    <p className="text-lg font-semibold text-gray-700 drop-shadow-sm leading-relaxed">
       {resultData.message}
     </p>
 
@@ -346,14 +346,14 @@ console.log(`🖼️ Rendering result:`, {
         key={category}
         className="flex justify-between items-center border-t pt-4 first:border-t-0 first:pt-0"
       >
-        <span className="capitalize text-gray-600">{category}</span>
+        <span className="text-lg font-bold text-gray-800 capitalize mb-1 tracking-tight">{category}</span>
         <span
-          className={`font-medium ${
+          className={`text-base font-semibold ${
     userSelectedValue === 0
       ? "text-gray-500"
       : isGoalMet
-      ? "text-green-600"
-      : "text-red-500"
+      ? "text-green-700"
+      : "text-red-700"
   }`}
 >
   {displayMessage}
