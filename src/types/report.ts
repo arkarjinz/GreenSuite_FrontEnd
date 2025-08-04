@@ -6,11 +6,11 @@ export interface CarbonActivity {
   month: string;
   year: string;
   activityType: string;
-  inputValue: number;
-  inputUnit: string;
+  value: number;
+  unit: string;
   footprint: number;
   region: string;
   fuelType: string;
   disposalMethod: string;
-  timestamp: string; // ISO format
+  submittedAt: string; // ISO format
 }
