@@ -1,19 +1,24 @@
+"use client"
 import React from 'react';
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
     variant?: 'primary' | 'secondary' | 'outline' | 'ghost';
     size?: 'sm' | 'md' | 'lg';
     isLoading?: boolean;
+    loading?: boolean; // Alternative prop name for compatibility
 }
 
 const Button: React.FC<ButtonProps> = ({
-                                           children,
-                                           variant = 'primary',
-                                           size = 'md',
-                                           isLoading = false,
-                                           className = '',
-                                           ...props
-                                       }) => {
+    children,
+    variant = 'primary',
+    size = 'md',
+    isLoading = false,
+    loading = false,
+    className = '',
+    ...props
+}) => {
+    const isLoadingState = isLoading || loading;
+    
     const baseClasses = "font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center";
 
     const variantClasses = {
@@ -32,10 +37,10 @@ const Button: React.FC<ButtonProps> = ({
     return (
         <button
             className={`${baseClasses} ${variantClasses[variant]} ${sizeClasses[size]} ${className}`}
-            disabled={isLoading || props.disabled}
+            disabled={isLoadingState || props.disabled}
             {...props}
         >
-            {isLoading ? (
+            {isLoadingState ? (
                 <div className="flex items-center">
                     <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>

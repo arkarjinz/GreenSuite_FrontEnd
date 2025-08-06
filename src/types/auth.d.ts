@@ -32,6 +32,20 @@ export type AuthUser = {
     streakCount?: number;
     aiCredits?: number;
     roles?: string[];
+    // Ban and rejection tracking
+    rejectionCount?: number;
+    remainingAttempts?: number;
+    isBanned?: boolean;
+    banReason?: string;
+    bannedAt?: string;
+    warning?: string;
+};
+
+export type ReapplyRequest = {
+    token: string;
+    companyName: string;
+    companyRole: 'MANAGER' | 'EMPLOYEE';
+    password: string;
 };
 
 export type SecurityQuestionsRequest = {
