@@ -1,12 +1,12 @@
 "use client";
 
 import type { CarbonInput } from "@/types/carbon";
-
+import { useEffect } from "react";
 import React, { useState } from "react";
 import { Calendar,Globe2,Zap, Fuel, Droplet, Trash2 } from "lucide-react";
 import Button from "@/components/ui/Button"; 
 import { calculateFootprint } from '@/lib/api/carbon';
-
+import { getSubmittedResourceMonths } from "@/lib/api/carbon";
 // Add these types to match your Java enums
 type ActivityType = "ELECTRICITY" | "WATER" | "WASTE" | "FUEL";
 
@@ -31,12 +31,17 @@ type FormData = {
   month: Month;
   year: string; 
 };
+//const [submittedMonths, setSubmittedMonths] = React.useState<string[]>([]);
+
 const getNumericMonth = (monthName: string): string => {
   const date = new Date(`${monthName} 1, 2000`);
   const month = date.getMonth() + 1;
   return month.toString().padStart(2, '0'); // e.g., '07'
 };
-
+// Helper function to get current year
+function getCurrentYear() {
+  return new Date().getFullYear();
+}
 // Define the mapping with proper typing
 const activityFieldMap: Record<ActivityType, keyof FormData> = {
   ELECTRICITY: 'electricity',
@@ -45,6 +50,7 @@ const activityFieldMap: Record<ActivityType, keyof FormData> = {
   WASTE: 'waste'
 } as const;
   const ResourceForm: React.FC = () => {
+    const currentYear = getCurrentYear();
   const [formData, setFormData] = useState<FormData>({
     electricity: "",
     water: "",
@@ -55,10 +61,41 @@ const activityFieldMap: Record<ActivityType, keyof FormData> = {
      disposalMethod: "recycled" as DisposalMethod, // New field
     region: "us" as Region, // Default to United States
     month: new Date().toLocaleString('default', { month: 'long' }) as Month, // Defaults to current month
-    year: new Date().getFullYear().toString(), 
-  });
-  
+    //year: new Date().getFullYear().toString(), 
+    year: currentYear.toString(),
 
+  });
+  // Add state for submitted months - similar to goalform.tsx
+  const [submittedMonths, setSubmittedMonths] = useState<string[]>([]);
+// Fetch submitted months whenever the year changes - similar to goalform.tsx
+  useEffect(() => {
+    async function fetchSubmittedResourceMonths() {
+      try {
+        const months = await getSubmittedResourceMonths(parseInt(formData.year));
+        console.log("Submitted resource months for year", formData.year, ":", months);
+        setSubmittedMonths(months);
+        
+        // Auto-select first non-disabled month
+        const monthNames = [
+          "January", "February", "March", "April", "May", "June",
+          "July", "August", "September", "October", "November", "December"
+        ];
+        
+        const firstAvailableMonth = monthNames.find(monthName => {
+          const numericMonth = getNumericMonth(monthName);
+          return !months.includes(numericMonth);
+        });
+        
+        if (firstAvailableMonth) {
+          setFormData(prev => ({ ...prev, month: firstAvailableMonth as Month }));
+        }
+      } catch (err) {
+        console.error("Failed to load submitted resource months", err);
+        setSubmittedMonths([]);
+      }
+    }
+    fetchSubmittedResourceMonths();
+  }, [formData.year]);
   const handleChange = (field: keyof FormData, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
@@ -294,9 +331,15 @@ const handleSubmit = async () => {
   >
     {Array.from({ length: 12 }, (_, i) => {
       const monthName = new Date(0, i).toLocaleString('default', { month: 'long' });
-      const monthValue = String(i + 1).padStart(2, '0'); // "07"
-      return (
-        <option key={monthValue} value={monthValue}>
+      const numericMonth = getNumericMonth(monthName);
+      //const monthValue = String(i + 1).padStart(2, '0'); // "07"
+       const isSubmitted = submittedMonths.includes(numericMonth);
+      console.log("[DEBUG] Resource Form - Month:", monthName, "Numeric:", numericMonth, "Submitted:", isSubmitted);
+
+       return (
+        <option key={monthName} value={monthName}disabled={isSubmitted}
+                  title={isSubmitted ? "Resource data already submitted for this month" : ""}
+                >
           {monthName}
         </option>
       );

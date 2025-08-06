@@ -108,6 +108,7 @@ const ReportTable = () => {
       <th className="px-6 py-3">Waste Goal Met</th>
       <th className="px-6 py-3">Created At</th>
       <th className="px-6 py-3">Updated At</th>
+      <th className="px-6 py-3">Action</th>
     </tr>
   </thead>
   <tbody>
@@ -130,6 +131,7 @@ const ReportTable = () => {
         <td className="px-6 py-4">{goal.wasteGoalMet ? 'Yes' : 'No'}</td>
         <td className="px-6 py-4">{goal.createdAt ? new Date(goal.createdAt).toLocaleString() : '-'}</td>
         <td className="px-6 py-4">{goal.updatedAt ? new Date(goal.updatedAt).toLocaleString() : '-'}</td>
+     
       </tr>
     ))}
   </tbody>
