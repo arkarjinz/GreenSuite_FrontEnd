@@ -8,6 +8,8 @@ import Button from "@/components/ui/Button";
 import { calculateFootprint } from '@/lib/api/carbon';
 import { getSubmittedResourceMonths } from "@/lib/api/carbon";
 // Add these types to match your Java enums
+
+
 type ActivityType = "ELECTRICITY" | "WATER" | "WASTE" | "FUEL";
 
 type VolumeUnit = "LITERS" | "CUBIC_METERS"; // Add other units if needed
