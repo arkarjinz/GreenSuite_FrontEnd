@@ -37,7 +37,7 @@ export default function LoginForm() {
     };
 
     return (
-        <div className="w-full max-w-md">
+        <div className="w-full max-w-5xl">
             {formError && (
                 <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-md text-sm flex items-start">
                     <ExclamationCircleIcon className="h-5 w-5 mr-2 mt-0.5 flex-shrink-0" />
