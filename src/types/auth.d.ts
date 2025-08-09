@@ -30,8 +30,27 @@ export type AuthUser = {
     createdAt?: string;
     lastActive?: string;
     streakCount?: number;
-    aiCredits?: number;
     roles?: string[];
+    
+    // AI Credits
+    aiCredits?: number;
+    canChat?: boolean;
+    maxPossibleChats?: number;
+    isLowOnCredits?: boolean;
+    
+    // Credit tracking from backend
+    totalCreditsPurchased?: number;
+    totalCreditsUsed?: number;
+    lastCreditPurchase?: string;
+    subscriptionTier?: 'FREE' | 'PREMIUM' | 'ENTERPRISE';
+    maxCredits?: number;
+    canReceiveCredits?: boolean;
+    
+    // Auto-refill feature
+    autoRefillEnabled?: boolean;
+    lastAutoRefill?: string;
+    nextAutoRefill?: string;
+    
     // Ban and rejection tracking
     rejectionCount?: number;
     remainingAttempts?: number;
@@ -39,6 +58,57 @@ export type AuthUser = {
     banReason?: string;
     bannedAt?: string;
     warning?: string;
+};
+
+export type AICreditInfo = {
+    currentCredits: number;
+    chatCost: number;
+    canChat: boolean;
+    possibleChats: number;
+    isLowOnCredits: boolean;
+    warning?: string;
+    
+    // Enhanced credit info
+    totalCreditsPurchased?: number;
+    totalCreditsUsed?: number;
+    subscriptionTier?: string;
+    maxCredits?: number;
+    canReceiveCredits?: boolean;
+    
+    // Auto-refill info
+    autoRefillEnabled?: boolean;
+    lastAutoRefill?: string;
+    nextAutoRefill?: string;
+    autoRefillRate?: number; // credits per refill
+    autoRefillInterval?: number; // minutes between refills
+};
+
+export type CreditPurchaseRequest = {
+    amount: number;
+    paymentMethod: string;
+};
+
+export type CreditStats = {
+    currentCredits: number;
+    chatCost: number;
+    canChat: boolean;
+    possibleChats: number;
+    isLowOnCredits: boolean;
+    warning?: string | null;
+    
+    // Enhanced stats
+    totalCreditsPurchased?: number;
+    totalCreditsUsed?: number;
+    subscriptionTier?: string;
+    maxCredits?: number;
+    canReceiveCredits?: boolean;
+    
+    // Auto-refill stats
+    autoRefillEnabled?: boolean;
+    lastAutoRefill?: string;
+    nextAutoRefill?: string;
+    autoRefillRate?: number;
+    autoRefillInterval?: number;
 };
 
 export type ReapplyRequest = {

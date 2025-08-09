@@ -62,17 +62,17 @@ export default function AIChatLandingPage() {
 
     const testimonials = [
         {
-            text: "Rin helped us calculate our carbon footprint and suggested renewable energy solutions. Her tsundere personality made the whole experience entertaining!",
+            text: "Rin helped us calculate our carbon footprint and suggested renewable energy solutions. Her elegant and thoughtful approach made complex environmental concepts truly meaningful.",
             author: "Sarah Chen",
             role: "Sustainability Manager"
         },
         {
-            text: "The streaming chat feature is amazing! It feels like talking to a real environmental expert who actually cares about our planet.",
+            text: "The streaming chat feature is amazing! It feels like talking to a wise environmental mentor who genuinely cares about our planet's future.",
             author: "Michael Rodriguez",
             role: "CEO, GreenTech Solutions"
         },
         {
-            text: "Rin's expertise in environmental calculations is incredible. She made complex sustainability concepts easy to understand.",
+            text: "Rin's expertise in environmental calculations is incredible. Her sophisticated and contemplative nature made learning about sustainability both profound and accessible.",
             author: "Emma Thompson",
             role: "Environmental Consultant"
         }
@@ -99,7 +99,7 @@ export default function AIChatLandingPage() {
                             </h1>
                         </div>
                         <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed mb-8">
-                            Your passionate environmental sustainability expert with a classic tsundere personality. 
+                            Your environmental sustainability teacher with a tsundere personality inspired by Mai Sakurajima. 
                             Get expert advice on carbon footprints, renewable energy, and sustainable practices through 
                             an engaging, interactive chat experience.
                         </p>

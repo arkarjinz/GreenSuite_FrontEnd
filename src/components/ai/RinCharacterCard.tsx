@@ -15,39 +15,42 @@ export default function RinCharacterCard({ personality, className = "" }: RinCha
     const [showSparkles, setShowSparkles] = useState(false);
 
     const quotes = [
-        "Hmph! It's not like I care about your carbon footprint or anything... but here's how to calculate it properly, baka!",
-        "Don't think I'm helping you because I want to! I just happen to know a lot about sustainability...",
-        "Tch! Another environmental question? Fine, I suppose I can share my expertise with you...",
-        "It's not like I spent years studying environmental science for you or anything... but here's what you need to know!"
+        "The rain reminds me of nature's gentle wisdom... What meaningful environmental question shall we explore together?",
+        "How lovely to contemplate the intricate beauty of our planet's ecosystems... What aspect of sustainability interests you?",
+        "I find myself drawn to thoughts of environmental harmony today... Perhaps you'd like to learn about protecting our beautiful earth?",
+        "There's something quite profound about understanding our role in nature's balance... What environmental topic would you find meaningful?"
     ];
 
     const getMoodColor = (mood: string) => {
         switch (mood) {
-            case 'full_tsun': return 'text-red-500';
-            case 'tsundere_default': return 'text-orange-500';
-            case 'slightly_dere': return 'text-yellow-500';
-            case 'mostly_dere': return 'text-green-500';
-            default: return 'text-blue-500';
+            case 'elegantly_contemplative': return 'text-emerald-600';
+            case 'sophisticatedly_professional': return 'text-blue-600';
+            case 'gently_encouraging': return 'text-green-600';
+            case 'warmly_invested': return 'text-teal-600';
+            case 'deeply_connected': return 'text-purple-600';
+            default: return 'text-emerald-500';
         }
     };
 
     const getMoodText = (mood: string) => {
         switch (mood) {
-            case 'full_tsun': return 'Very Tsundere';
-            case 'tsundere_default': return 'Tsundere';
-            case 'slightly_dere': return 'Warming Up';
-            case 'mostly_dere': return 'Quite Friendly';
-            default: return 'Neutral';
+            case 'elegantly_contemplative': return 'Elegantly Contemplative';
+            case 'sophisticatedly_professional': return 'Sophisticated & Professional';
+            case 'gently_encouraging': return 'Gently Encouraging';
+            case 'warmly_invested': return 'Warmly Invested';
+            case 'deeply_connected': return 'Deeply Connected';
+            default: return 'Gracefully Serene';
         }
     };
 
     const getMoodGradient = (mood: string) => {
         switch (mood) {
-            case 'full_tsun': return 'from-red-400 to-pink-500';
-            case 'tsundere_default': return 'from-orange-400 to-red-500';
-            case 'slightly_dere': return 'from-yellow-400 to-orange-500';
-            case 'mostly_dere': return 'from-green-400 to-emerald-500';
-            default: return 'from-blue-400 to-indigo-500';
+            case 'elegantly_contemplative': return 'from-emerald-400 to-green-500';
+            case 'sophisticatedly_professional': return 'from-blue-400 to-indigo-500';
+            case 'gently_encouraging': return 'from-green-400 to-emerald-500';
+            case 'warmly_invested': return 'from-teal-400 to-emerald-500';
+            case 'deeply_connected': return 'from-purple-400 to-indigo-500';
+            default: return 'from-emerald-400 to-teal-500';
         }
     };
 
@@ -158,8 +161,8 @@ export default function RinCharacterCard({ personality, className = "" }: RinCha
                             <SparklesIcon className="w-5 h-5 text-yellow-500" />
                         </div>
                         <p className="text-gray-600 text-sm leading-relaxed mt-3">
-                            A brilliant 21-year-old environmental sustainability specialist with a classic tsundere personality. 
-                            Passionate about protecting the environment but struggles to express feelings directly.
+                            A sophisticated 27-year-old environmental sustainability teacher with an elegant, contemplative personality. 
+                            Graceful and thoughtful, she guides students with refined wisdom and poetic insights about our planet.
                         </p>
                     </div>
 
@@ -204,12 +207,12 @@ export default function RinCharacterCard({ personality, className = "" }: RinCha
                         </div>
                         
                         <div className="flex items-center space-x-3 p-3 bg-white/60 rounded-xl border border-emerald-100 hover:bg-white/80 transition-colors">
-                            <div className="w-10 h-10 bg-gradient-to-br from-red-400 to-pink-500 rounded-lg flex items-center justify-center">
+                            <div className="w-10 h-10 bg-gradient-to-br from-purple-400 to-indigo-500 rounded-lg flex items-center justify-center">
                                 <HeartIcon className="w-5 h-5 text-white" />
                             </div>
                             <div>
-                                <div className="font-semibold text-gray-800">Tsundere</div>
-                                <div className="text-xs text-gray-500">Classic personality</div>
+                                <div className="font-semibold text-gray-800">Elegant</div>
+                                <div className="text-xs text-gray-500">Refined & sophisticated</div>
                             </div>
                         </div>
                         

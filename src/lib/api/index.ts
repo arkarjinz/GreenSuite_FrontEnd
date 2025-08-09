@@ -126,6 +126,61 @@ export const authApi = {
     }
 };
 
+// AI Credits API
+export const aiCreditsApi = {
+    // Get user's current credit balance and stats
+    getCreditBalance: async (): Promise<any> => {
+        const response = await axiosInstance.get('/api/credits/balance');
+        return response.data;
+    },
+
+    // Check if user can chat (has enough credits)
+    canUserChat: async (): Promise<any> => {
+        const response = await axiosInstance.get('/api/credits/can-chat');
+        return response.data;
+    },
+
+    // Purchase credits (placeholder for payment integration)
+    purchaseCredits: async (amount: number, paymentMethod: string): Promise<any> => {
+        const response = await axiosInstance.post('/api/credits/purchase', null, {
+            params: { amount, paymentMethod }
+        });
+        return response.data;
+    },
+
+    // Get credit usage history
+    getCreditHistory: async (): Promise<any> => {
+        const response = await axiosInstance.get('/api/credits/history');
+        return response.data;
+    },
+
+    // Get credit pricing information
+    getCreditPricing: async (): Promise<any> => {
+        const response = await axiosInstance.get('/api/credits/pricing');
+        return response.data;
+    },
+
+    // Get auto-refill information
+    getAutoRefillInfo: async (): Promise<any> => {
+        const response = await axiosInstance.get('/api/credits/auto-refill-info');
+        return response.data;
+    },
+
+    // Admin: Add credits to user account
+    addCreditsToUser: async (userId: string, amount: number, reason?: string): Promise<any> => {
+        const response = await axiosInstance.post('/api/credits/add', null, {
+            params: { userId, amount, reason }
+        });
+        return response.data;
+    },
+
+    // Admin: Get credits overview
+    getCreditsOverview: async (): Promise<any> => {
+        const response = await axiosInstance.get('/api/credits/admin/overview');
+        return response.data;
+    }
+};
+
 // Company API
 export const companyApi = {
     searchCompanies: async (query: string): Promise<any[]> => {

@@ -1,9 +1,9 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
-import { PaperAirplaneIcon, TrashIcon, SparklesIcon, ChatBubbleLeftRightIcon, LightBulbIcon, WifiIcon, CpuChipIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { PaperAirplaneIcon, TrashIcon, SparklesIcon, ChatBubbleLeftRightIcon, LightBulbIcon, WifiIcon, CpuChipIcon, XMarkIcon, ExclamationTriangleIcon, CreditCardIcon } from '@heroicons/react/24/outline';
 import Button from '@/components/ui/Button';
-import { aiChatApi } from '@/lib/api';
+import { aiChatApi, aiCreditsApi } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import TypingIndicator from './TypingIndicator';
 import RinImage from './RinImage';
@@ -14,6 +14,48 @@ interface Message {
     isUser: boolean;
     timestamp: Date;
     isStreaming?: boolean;
+}
+
+interface CreditInfo {
+    currentCredits: number;
+    chatCost: number;
+    canChat: boolean;
+    possibleChats: number;
+    isLowOnCredits: boolean;
+    warning?: string;
+    creditsUsed?: number;
+    remainingCredits?: number;
+    
+    // Enhanced credit info
+    totalCreditsPurchased?: number;
+    totalCreditsUsed?: number;
+    subscriptionTier?: string;
+    maxCredits?: number;
+    canReceiveCredits?: boolean;
+    
+    // Auto-refill info
+    autoRefillEnabled?: boolean;
+    lastAutoRefill?: string;
+    nextAutoRefill?: string;
+    autoRefillRate?: number; // credits per refill
+    autoRefillInterval?: number; // minutes between refills
+}
+
+// Helper function to handle message content - backend now handles intelligent formatting
+function handleMessageContent(content: any): string {
+    if (!content) return '';
+    
+    // Convert to string if needed
+    let str = typeof content === 'string' ? content : String(content);
+    str = str.trim();
+    
+    // If it's empty after trimming, return empty
+    if (!str) return '';
+    
+    console.log('📝 Processing content:', JSON.stringify(str));
+    
+    // Backend now handles all intelligent formatting, so just return the content as-is
+    return str;
 }
 
 export default function ChatInterface() {
@@ -29,6 +71,9 @@ export default function ChatInterface() {
     const [rinPersonality, setRinPersonality] = useState<any>(null);
     const [isInitialized, setIsInitialized] = useState(false);
     const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+    const [creditInfo, setCreditInfo] = useState<CreditInfo | null>(null);
+    const [showCreditWarning, setShowCreditWarning] = useState(false);
+    const [showAutoRefillInfo, setShowAutoRefillInfo] = useState(false);
     const hasWelcomeMessageRef = useRef(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -50,12 +95,90 @@ export default function ChatInterface() {
         });
     }, [user]);
 
+    // Load credit info when user is available
+    useEffect(() => {
+        if (user?.id) {
+            loadCreditInfo();
+        } else {
+            // Reset when user logs out
+            setMessages([]);
+            setCreditInfo(null);
+            setIsInitialized(false);
+            hasWelcomeMessageRef.current = false;
+        }
+    }, [user]);
+
     // Initialize persistent conversation ID and load chat history when user is available
     useEffect(() => {
         if (user?.id && !isInitialized) {
+            // Reset state when new user logs in
+            setMessages([]);
+            hasWelcomeMessageRef.current = false;
             initializePersistentChat();
         }
     }, [user, isInitialized]);
+
+    // Auto-refill timer - check every minute for credit updates
+    useEffect(() => {
+        if (!user?.id || !creditInfo?.autoRefillEnabled) return;
+
+        const interval = setInterval(() => {
+            loadCreditInfo(); // Refresh credit info to check for auto-refill
+        }, 60000); // Check every minute
+
+        return () => clearInterval(interval);
+    }, [user?.id, creditInfo?.autoRefillEnabled]);
+
+    // Load user's credit information
+    const loadCreditInfo = async () => {
+        if (!user?.id) return;
+
+        try {
+            console.log('💰 Loading credit info for user:', user.id);
+            const response = await aiCreditsApi.getCreditBalance();
+            console.log('💰 Credit API response:', response);
+            
+            if (response.success && response.data) {
+                const creditData = response.data;
+                console.log('💰 Setting credit info:', creditData);
+                setCreditInfo(creditData);
+                
+                // Show warning if low on credits
+                if (creditData.isLowOnCredits && creditData.currentCredits > 0) {
+                    setShowCreditWarning(true);
+                    setTimeout(() => setShowCreditWarning(false), 8000); // Hide after 8 seconds
+                }
+
+                // Show auto-refill info if enabled
+                if (creditData.autoRefillEnabled) {
+                    setShowAutoRefillInfo(true);
+                    setTimeout(() => setShowAutoRefillInfo(false), 5000); // Hide after 5 seconds
+                }
+            } else {
+                console.warn('⚠️ Credit API returned no data, using defaults');
+                // Set reasonable defaults if API returns no data
+                setCreditInfo({
+                    currentCredits: 100, // Generous default
+                    chatCost: 1, // Low cost
+                    canChat: true, // Allow chat by default
+                    possibleChats: 100,
+                    isLowOnCredits: false,
+                    autoRefillEnabled: false
+                });
+            }
+        } catch (error) {
+            console.error('❌ Error loading credit info:', error);
+            // Set generous default credit info if API fails - don't block user from chatting
+            setCreditInfo({
+                currentCredits: 100, // Generous default credits
+                chatCost: 1, // Low chat cost
+                canChat: true, // Always allow chat when API fails
+                possibleChats: 100,
+                isLowOnCredits: false,
+                autoRefillEnabled: false
+            });
+        }
+    };
 
     // Initialize persistent conversation and load history
     const initializePersistentChat = async () => {
@@ -86,32 +209,27 @@ export default function ChatInterface() {
                     if (historyResponse.messages && historyResponse.messages.length > 0) {
                         console.log('📚 Loaded chat history:', historyResponse.messages.length, 'messages');
                         
-                        // Convert backend messages to frontend format
-                        const loadedMessages = historyResponse.messages.map((msg: any) => {
-                            // Extract clean content from potentially raw message objects
-                            let content = msg.content || msg.message || '';
-                            
-                            // Handle raw Spring AI message objects
-                            if (typeof content === 'object' && content.content) {
-                                content = content.content;
-                            }
-                            
-                            // Clean up raw message object strings like "UserMessage{content='text', ...}"
-                            if (typeof content === 'string' && content.includes('Message{')) {
-                                const contentMatch = content.match(/content='([^']*)'/) || content.match(/textContent=([^,}]*)/);
-                                if (contentMatch) {
-                                    content = contentMatch[1];
-                                }
+                        // Process loaded messages - backend now handles formatting
+                        const loadedMessages = historyResponse.messages
+                            .map((msg: any) => {
+                                const rawContent = msg.content || msg.message || '';
+                                const processedContent = handleMessageContent(rawContent);
+                                
+                                // Skip empty messages after processing
+                                if (!processedContent || !processedContent.trim()) {
+                                    return null;
                             }
                             
                             return {
                                 id: msg.id || `loaded_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-                                content: content.trim(),
+                                    content: processedContent,
                                 isUser: msg.isUser || msg.isFromUser || false,
                                 timestamp: new Date(msg.timestamp || msg.createdAt || Date.now())
                             };
-                        });
+                            })
+                            .filter((msg: any) => msg !== null); // Remove null entries
 
+                        console.log('✅ Setting loaded messages:', loadedMessages.length, 'valid messages');
                         setMessages(loadedMessages);
                         hasWelcomeMessageRef.current = true; // Prevent duplicate welcome message
                     } else {
@@ -130,7 +248,7 @@ export default function ChatInterface() {
             // Show welcome message only for completely new conversations
             if (isNew || messages.length === 0) {
                 setTimeout(() => {
-                    if (!hasWelcomeMessageRef.current) {
+                    if (!hasWelcomeMessageRef.current && messages.length === 0) {
                         showWelcomeMessage();
                         hasWelcomeMessageRef.current = true;
                     }
@@ -250,6 +368,20 @@ export default function ChatInterface() {
         );
     }
 
+    // Show loading while user data is being loaded
+    if (!user) {
+        return (
+            <div className="flex flex-col h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+                <div className="flex-1 flex items-center justify-center">
+                    <div className="text-center">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mx-auto"></div>
+                        <p className="mt-2 text-gray-600">Loading user data...</p>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
     function addMessage(message: Message) {
         setMessages(prev => {
             // Check if a message with the same ID already exists
@@ -258,16 +390,30 @@ export default function ChatInterface() {
                 console.log('Duplicate message prevented:', message.id);
                 return prev;
             }
-            return [...prev, message];
+            
+            // Process the message content - backend now handles formatting
+            const processedContent = handleMessageContent(message.content);
+            if (!processedContent || !processedContent.trim()) {
+                console.log('Empty message filtered out:', message.content);
+                return prev;
+            }
+            
+            // Create processed message
+            const processedMessage = {
+                ...message,
+                content: processedContent
+            };
+            
+            return [...prev, processedMessage];
         });
     }
 
     function showWelcomeMessage() {
         const welcomeMessages = [
-            "H-hmph! You're back... I wasn't waiting for you or anything! I just happened to be here working on environmental data analysis, baka!",
-            "Oh, it's you again... Don't think I'm happy to see you! I was just organizing some sustainability reports. What do you want this time?",
-            "Tch! You finally decided to show up! I've been processing carbon footprint calculations while you were away. Not that I missed talking to you or anything!",
-            "You're here... again. Fine! I suppose I can spare some time from my important environmental research to talk with you. Don't get the wrong idea though!"
+            "Good afternoon... I was just contemplating the intricate balance of our planet's ecosystems. What aspect of environmental sustainability would you like to explore together?",
+            "How lovely to see you... I've been reflecting on some particularly meaningful environmental topics. What environmental question has been on your mind?",
+            "Welcome... I find myself drawn to thoughts of nature's wisdom today. Perhaps you'd like to discuss how we might better protect our beautiful planet?",
+            "It's quite peaceful having someone to share environmental insights with... What sustainability topic would you find meaningful to explore?"
         ];
         
         const randomWelcome = welcomeMessages[Math.floor(Math.random() * welcomeMessages.length)];
@@ -296,12 +442,36 @@ export default function ChatInterface() {
             console.error('❌ User not authenticated - cannot send message');
             addMessage({
                 id: `error_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-                content: "Tch! You need to be properly logged in to chat with me! Please refresh the page and make sure you're authenticated, baka!",
+                content: "I'm quite sorry, but it appears you need to be properly authenticated to continue our environmental discussion. Please refresh the page and ensure you're logged in.",
                 isUser: false,
                 timestamp: new Date()
             });
             return;
         }
+
+        // Check if user has enough credits - only block if we have explicit credit info AND can't chat
+        if (creditInfo && creditInfo.canChat === false && creditInfo.currentCredits < creditInfo.chatCost) {
+            console.log('❌ Credit check failed:', { 
+                canChat: creditInfo.canChat, 
+                currentCredits: creditInfo.currentCredits, 
+                chatCost: creditInfo.chatCost 
+            });
+            addMessage({
+                id: `no_credits_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+                content: `I'm quite sorry, but it appears you don't have sufficient credits to continue our environmental discussion. You need ${creditInfo.chatCost} credits per chat, but you only have ${creditInfo.currentCredits}. Perhaps you could consider purchasing additional credits so we might continue learning about sustainability together?`,
+                isUser: false,
+                timestamp: new Date()
+            });
+            return;
+        }
+        
+        // Log credit status for debugging
+        console.log('💰 Credit status before sending message:', {
+            hasCreditInfo: !!creditInfo,
+            canChat: creditInfo?.canChat,
+            currentCredits: creditInfo?.currentCredits,
+            chatCost: creditInfo?.chatCost
+        });
 
         // Check if we have valid tokens
         const accessToken = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
@@ -343,6 +513,9 @@ export default function ChatInterface() {
             } else {
                 await sendSyncMessage(currentInput);
             }
+
+            // Refresh credit info after successful chat
+            await loadCreditInfo();
         } catch (error: any) {
             console.error('❌ Chat error details:', {
                 message: error.message,
@@ -352,16 +525,16 @@ export default function ChatInterface() {
             });
             
             // Don't let chat errors cause logout - handle gracefully
-            let errorMessage = "Hmph! Something went wrong with my systems... It's not like I wanted to help you anyway! Try again later, baka!";
+            let errorMessage = "I'm experiencing some difficulty with my systems at the moment... Perhaps we could try again in a little while?";
             
             if (error.message?.includes('Authentication')) {
-                errorMessage = "Tch! My authentication got mixed up... Try refreshing the page, baka!";
+                errorMessage = "There seems to be an authentication issue... Please try refreshing the page.";
             } else if (error.message?.includes('Network')) {
-                errorMessage = "Hmph! The network seems to be acting up. Check your connection and try again!";
+                errorMessage = "There appears to be a network connectivity issue... Please check your connection and try again when convenient.";
             } else if (error.response?.status === 500) {
-                errorMessage = "My AI brain seems to be having a moment... The backend might be sleeping. Try again in a bit!";
+                errorMessage = "I'm experiencing some technical difficulties at the moment. Please try again in a little while, and I'll be most happy to help you with your environmental questions.";
             } else if (error.response?.status === 401) {
-                errorMessage = "Tch! Your session expired. Please refresh the page and log in again!";
+                errorMessage = "Your session appears to have expired. Please refresh the page and log in again.";
             }
             
             addMessage({
@@ -376,33 +549,14 @@ export default function ChatInterface() {
         }
     };
 
-    // Normalize streamed content to fix spacing and formatting issues
-    function normalizeStreamedContent(content: string): string {
+    // Process streamed content - backend now handles intelligent formatting
+    function processStreamedContent(content: string): string {
         if (!content) return content;
         
-        console.log('🔧 Before normalization:', JSON.stringify(content));
+        console.log('📝 Processing streamed content:', JSON.stringify(content));
         
-        // Fix common streaming issues with more precise patterns
-        let normalized = content
-            // Fix missing spaces after punctuation (more comprehensive)
-            .replace(/([.!?:;,])/g, '$1 ')
-            // Fix missing spaces before capital letters (but not at start of sentence)
-            .replace(/([a-z])([A-Z])/g, '$1 $2')
-            // Fix missing spaces around asterisks for emphasis
-            .replace(/\*([^*]+)\*/g, ' *$1* ')
-            // Fix specific patterns we've seen in Rin's responses
-            .replace(/(\w)(is|it|we|he|she|they|you|me|us|them)(\W)/gi, '$1 $2$3')
-            .replace(/(\w)(have|has|had|will|would|could|should|can|may|might)(\W)/gi, '$1 $2$3')
-            .replace(/(\w)(not|n't|don't|can't|won't|isn't|aren't|wasn't|weren't)(\W)/gi, '$1 $2$3')
-            // Fix specific Rin patterns
-            .replace(/(\w)(Tch|Hmph|Well|Honestly|Seriously|Obviously|Actually)(\W)/gi, '$1 $2$3')
-            .replace(/(\w)(acceptable|surprised|clarifying|expecting|wasting|spell)(\W)/gi, '$1 $2$3')
-            // Clean up multiple spaces and trim
-            .replace(/\s+/g, ' ')
-            .trim();
-            
-        console.log('🔧 After normalization:', JSON.stringify(normalized));
-        return normalized;
+        // Backend now handles all intelligent formatting, so just return the content as-is
+        return content.trim();
     }
 
     const updateMessage = (messageId: string, content: string) => {
@@ -421,45 +575,79 @@ export default function ChatInterface() {
             const decoder = new TextDecoder('utf-8');
     
             const assistantMessageId = `assistant_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-            addMessage({
-                id: assistantMessageId,
-                content: '',
-                isUser: false,
-                timestamp: new Date(),
-                isStreaming: true
-            });
-    
             let accumulatedContent = '';
+            let hasAddedMessage = false;
     
             while (true) {
                 const { done, value } = await reader.read();
                 if (done) break;
     
                 const chunk = decoder.decode(value, { stream: true });
+                console.log('📥 Received chunk:', JSON.stringify(chunk));
                 
                 if (chunk) {
                     accumulatedContent += chunk;
-                    // Update with raw content during streaming - no processing
+                    console.log('📝 Accumulated so far:', JSON.stringify(accumulatedContent));
+                    
+                    // Add message when we first get content
+                    if (!hasAddedMessage && accumulatedContent.trim()) {
+                        console.log('➕ Adding streaming message');
+                        // Bypass addMessage to avoid cleaning during streaming
+                        setMessages(prev => [...prev, {
+                            id: assistantMessageId,
+                            content: accumulatedContent,
+                            isUser: false,
+                            timestamp: new Date(),
+                            isStreaming: true
+                        }]);
+                        hasAddedMessage = true;
+                    } else if (hasAddedMessage) {
+                        // Update existing message - bypass addMessage to avoid cleaning
+                        console.log('🔄 Updating streaming message');
                     setMessages(prev => prev.map(msg => 
                         msg.id === assistantMessageId 
                             ? { ...msg, content: accumulatedContent, isStreaming: true }
                             : msg
                     ));
+                    }
                 }
             }
     
-            console.log('✅ Streaming completed successfully');
+            console.log('✅ Streaming completed. Final content:', JSON.stringify(accumulatedContent));
             
-            // Only apply any cleanup to the FINAL complete message if absolutely necessary
-            // In most cases, the content should already be properly formatted
-            const finalContent = accumulatedContent.trim() || "I couldn't generate a proper response. Please try again!";
+            // Clean the final accumulated content only at the very end
+            let finalContent = accumulatedContent.trim();
+            console.log('🧹 Before cleaning:', JSON.stringify(finalContent));
             
-            // Mark as complete
+            // Process the final content - backend now handles formatting
+            finalContent = handleMessageContent(finalContent);
+            console.log('🧹 After cleaning:', JSON.stringify(finalContent));
+            
+            if (!finalContent) {
+                finalContent = "I'm having a bit of trouble thinking of a proper response... Perhaps we could try a different approach to your environmental question?";
+            }
+            
+            console.log('🎯 Final cleaned content:', JSON.stringify(finalContent));
+            
+            // Mark as complete - directly update the message to ensure cleaning is applied
+            if (hasAddedMessage) {
+                console.log('🔄 Updating final message with cleaned content');
             setMessages(prev => prev.map(msg => 
                 msg.id === assistantMessageId 
                     ? { ...msg, content: finalContent, isStreaming: false }
                     : msg
             ));
+            } else {
+                // Add message if we never added it during streaming
+                console.log('➕ Adding final message (no streaming occurred)');
+                setMessages(prev => [...prev, {
+                    id: assistantMessageId,
+                    content: finalContent,
+                    isUser: false,
+                    timestamp: new Date(),
+                    isStreaming: false
+                }]);
+            }
     
             // Optional personality state update
             try {
@@ -482,11 +670,14 @@ export default function ChatInterface() {
             
             let content = '';
             if (response?.data?.response) {
-                content = response.data.response;
+                content = handleMessageContent(response.data.response);
             } else if (response?.response) {
-                content = response.response;
-            } else {
-                content = "Hmph! I got your message but something's not working right. Try asking me again, baka!";
+                content = handleMessageContent(response.response);
+            } 
+            
+            // Fallback if content is empty after processing
+            if (!content || !content.trim()) {
+                content = "I'm having a bit of trouble thinking of a proper response... Perhaps we could try a different approach to your environmental question?";
             }
 
             addMessage({
@@ -581,7 +772,7 @@ export default function ChatInterface() {
             } else if (response?.tip) {
                 tipContent = response.tip;
             } else {
-                tipContent = "Hmph! Here's a basic tip: start measuring your carbon footprint properly! It's not rocket science, baka!";
+                tipContent = "Here's a thoughtful tip: begin by measuring your carbon footprint properly. It's quite meaningful to understand your environmental impact.";
             }
 
             addMessage({
@@ -594,7 +785,7 @@ export default function ChatInterface() {
             console.error('Error getting environmental tip:', error);
             addMessage({
                 id: `tip_error_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-                content: "Tch! I had trouble getting an environmental tip right now... But here's one anyway: Stop wasting energy on pointless questions and start focusing on real sustainability practices!",
+                content: "I'm having some difficulty retrieving an environmental tip at the moment... But here's a meaningful thought: Focus on understanding your daily environmental impact and how small changes can make a beautiful difference.",
                 isUser: false,
                 timestamp: new Date()
             });
@@ -637,7 +828,7 @@ export default function ChatInterface() {
                     <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-4">
                             <div className="relative">
-                                <RinImage size="md" />
+                            <RinImage size="md" />
                                 <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full border-2 border-white animate-pulse"></div>
                             </div>
                             <div>
@@ -693,28 +884,28 @@ export default function ChatInterface() {
                                 <div className="mb-6">
                                     <h3 className="text-2xl font-bold text-gray-900 mb-3">
                                         🔐 Authentication Required
-                                    </h3>
+                        </h3>
                                     <div className="w-16 h-1 bg-gradient-to-r from-emerald-400 to-teal-400 rounded-full mx-auto mb-4"></div>
                                     <p className="text-gray-600 text-lg leading-relaxed">
                                         Hmph! You need to be properly logged in to chat with me, baka! 
-                                        I'm not just going to let anyone access my environmental expertise!
+                                        I'm not just going to let anyone access my environmental teaching!
                                     </p>
                                 </div>
                                 
                                 {/* Action Buttons */}
                                 <div className="space-y-4">
-                                    <button
-                                        onClick={() => refreshAuth()}
+                            <button
+                                onClick={() => refreshAuth()}
                                         className="w-full px-6 py-4 bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-2xl hover:from-emerald-600 hover:to-teal-600 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl font-semibold text-lg"
-                                    >
+                            >
                                         <div className="flex items-center justify-center space-x-3">
                                             <div className="w-6 h-6 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
                                             <span>🔄 Try to Refresh Authentication</span>
                                         </div>
-                                    </button>
-                                    
-                                    <button
-                                        onClick={() => window.location.href = '/login'}
+                            </button>
+                            
+                            <button
+                                onClick={() => window.location.href = '/login'}
                                         className="w-full px-6 py-4 bg-gradient-to-r from-gray-600 to-gray-700 text-white rounded-2xl hover:from-gray-700 hover:to-gray-800 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl font-semibold text-lg"
                                     >
                                         <div className="flex items-center justify-center space-x-3">
@@ -723,18 +914,18 @@ export default function ChatInterface() {
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                                             </svg>
                                         </div>
-                                    </button>
-                                </div>
+                            </button>
+                        </div>
 
                                 {/* Tsundere Quote */}
                                 <div className="mt-6 p-4 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-2xl border-l-4 border-emerald-400">
                                     <p className="text-sm text-gray-700 italic">
-                                        "It's not like I want you to log in or anything... but I can't help you with sustainability 
+                                        "It's not like I want you to log in or anything... but I can't teach you about sustainability 
                                         unless you're properly authenticated, baka! 💚"
                                     </p>
-                                </div>
                             </div>
                         </div>
+                    </div>
 
                         {/* Debug Info - Collapsible */}
                         <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-emerald-100 overflow-hidden">
@@ -751,7 +942,7 @@ export default function ChatInterface() {
                                         <span className={`text-sm font-semibold ${user === undefined ? 'text-yellow-600' : user === null ? 'text-red-600' : 'text-green-600'}`}>
                                             {user === undefined ? 'Loading...' : user === null ? 'Not authenticated' : 'Authenticated'}
                                         </span>
-                                    </div>
+                </div>
                                     <div className="flex justify-between items-center py-2 border-b border-emerald-100">
                                         <span className="text-sm font-medium text-gray-600">Access Token:</span>
                                         <span className={`text-sm font-semibold ${typeof window !== 'undefined' && localStorage.getItem('accessToken') ? 'text-green-600' : 'text-red-600'}`}>
@@ -799,6 +990,60 @@ export default function ChatInterface() {
 
     return (
         <div className="flex flex-col h-full bg-gradient-to-br from-gray-50 to-gray-100">
+            {/* Low Credit Warning Banner */}
+            {showCreditWarning && creditInfo?.isLowOnCredits && (
+                <div className="bg-gradient-to-r from-yellow-400 to-orange-400 text-white px-6 py-3 shadow-lg">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-3">
+                            <ExclamationTriangleIcon className="w-6 h-6" />
+                            <div>
+                                <p className="font-semibold">Low on AI Credits!</p>
+                                <p className="text-sm text-yellow-100">
+                                    You have {creditInfo.currentCredits} credits left ({creditInfo.possibleChats} more chats)
+                                </p>
+                            </div>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                            <button
+                                onClick={() => {/* TODO: Navigate to credit purchase */}}
+                                className="px-4 py-2 bg-white text-orange-600 rounded-lg hover:bg-gray-100 transition-colors font-medium text-sm"
+                            >
+                                Get More Credits
+                            </button>
+                            <button
+                                onClick={() => setShowCreditWarning(false)}
+                                className="p-1 hover:bg-white/20 rounded"
+                            >
+                                <XMarkIcon className="w-5 h-5" />
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Auto-Refill Info Banner */}
+            {showAutoRefillInfo && creditInfo?.autoRefillEnabled && (
+                <div className="bg-gradient-to-r from-green-400 to-emerald-400 text-white px-6 py-3 shadow-lg">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-3">
+                            <SparklesIcon className="w-6 h-6" />
+                            <div>
+                                <p className="font-semibold">Auto-Refill Active! 🎉</p>
+                                <p className="text-sm text-green-100">
+                                    You'll receive {creditInfo.autoRefillRate || 1} credit every {creditInfo.autoRefillInterval || 5} minutes
+                                </p>
+                            </div>
+                        </div>
+                        <button
+                            onClick={() => setShowAutoRefillInfo(false)}
+                            className="p-1 hover:bg-white/20 rounded"
+                        >
+                            <XMarkIcon className="w-5 h-5" />
+                        </button>
+                    </div>
+                </div>
+            )}
+
             {/* Header */}
             <div className="flex-shrink-0 bg-white border-b border-gray-200 px-6 py-4 shadow-sm">
                 <div className="flex items-center justify-between">
@@ -809,17 +1054,38 @@ export default function ChatInterface() {
                             <div className="flex items-center space-x-2">
                                 <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                                 <span className="text-sm text-gray-500">Online</span>
-                                {/* Debug: Show authentication status */}
-                                {user?.id ? (
-                                    <span className="text-xs text-green-600 ml-2">✓ Auth: {user.id}</span>
-                                ) : (
-                                    <span className="text-xs text-red-600 ml-2">✗ Not authenticated</span>
-                                )}
                             </div>
                         </div>
                     </div>
                     
                     <div className="flex items-center space-x-3">
+                        {/* Credit Display */}
+                        {creditInfo && (
+                            <div className="flex items-center space-x-3">
+                                <div className="flex items-center space-x-2 px-3 py-2 bg-gradient-to-r from-green-50 to-emerald-50 rounded-full border border-green-200">
+                                    <CreditCardIcon className="w-4 h-4 text-green-600" />
+                                    <span className={`text-sm font-medium ${
+                                        creditInfo.isLowOnCredits 
+                                            ? 'text-orange-600' 
+                                            : creditInfo.canChat 
+                                                ? 'text-green-600' 
+                                                : 'text-red-600'
+                                    }`}>
+                                        {creditInfo.currentCredits} credits
+                                    </span>
+                                </div>
+
+                                {!creditInfo.canChat && (
+                                    <button
+                                        onClick={() => {/* TODO: Navigate to credit purchase */}}
+                                        className="px-3 py-2 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-full text-sm font-medium hover:from-orange-600 hover:to-red-600 transition-all"
+                                    >
+                                        Get More
+                                    </button>
+                                )}
+                            </div>
+                        )}
+
                         {/* Mode Toggle */}
                         <button
                             onClick={() => setStreamingMode(streamingMode === 'streaming' ? 'sync' : 'streaming')}
@@ -932,15 +1198,16 @@ export default function ChatInterface() {
 
             {/* Input Area - Fixed at bottom */}
             <div className="flex-shrink-0 bg-white border-t border-gray-200 px-6 py-4">
-                {/* Quick Actions */}
-                <div className="flex space-x-2 mb-3">
+                {/* Credit Status and Quick Actions */}
+                <div className="flex justify-between items-center mb-3">
+                    <div className="flex space-x-2">
                     <button
                         onClick={getEnvironmentalTip}
                         disabled={isLoading}
                         className="flex items-center px-3 py-2 bg-green-50 hover:bg-green-100 text-green-700 rounded-full text-sm transition-all font-medium"
                     >
                         <LightBulbIcon className="w-4 h-4 mr-1" />
-                        Eco Tip
+                            Eco Tip (Free)
                     </button>
                     <button
                         onClick={() => {/* Add sustainability facts */}}
@@ -948,8 +1215,24 @@ export default function ChatInterface() {
                         className="flex items-center px-3 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-full text-sm transition-all font-medium"
                     >
                         <SparklesIcon className="w-4 h-4 mr-1" />
-                        Fun Facts
+                            Fun Facts (Free)
                     </button>
+                    </div>
+
+                    {/* Credit Info */}
+                    {creditInfo && (
+                        <div className="flex items-center space-x-2 text-sm">
+                            {creditInfo.canChat ? (
+                                <span className="text-green-600">
+                                    💬 Chat costs {creditInfo.chatCost} credits
+                                </span>
+                            ) : (
+                                <span className="text-red-600 font-medium">
+                                    ⚠️ Need {creditInfo.chatCost} credits to chat
+                                </span>
+                            )}
+                        </div>
+                    )}
                 </div>
 
                 {/* Message Input */}
@@ -961,10 +1244,16 @@ export default function ChatInterface() {
                                 value={inputMessage}
                                 onChange={(e) => setInputMessage(e.target.value)}
                                 onKeyPress={handleKeyPress}
-                                placeholder="Message Rin about sustainability..."
-                                className="w-full px-6 py-4 bg-gray-50 border border-gray-200 rounded-3xl focus:ring-2 focus:ring-green-500 focus:border-green-500 focus:bg-white resize-none transition-all text-gray-900 placeholder-gray-500"
+                                placeholder={
+                                    creditInfo && creditInfo.canChat === false 
+                                        ? "Need more credits to chat with Rin..."
+                                        : "Message Rin about sustainability..."
+                                }
+                                className={`w-full px-6 py-4 bg-gray-50 border border-gray-200 rounded-3xl focus:ring-2 focus:ring-green-500 focus:border-green-500 focus:bg-white resize-none transition-all text-gray-900 placeholder-gray-500 ${
+                                    creditInfo && creditInfo.canChat === false ? 'opacity-60' : ''
+                                }`}
                                 style={{ minHeight: '52px', maxHeight: '120px' }}
-                                disabled={isLoading}
+                                disabled={isLoading || Boolean(creditInfo && creditInfo.canChat === false)}
                                 onInput={(e) => {
                                     const target = e.target as HTMLTextAreaElement;
                                     target.style.height = 'auto';
@@ -975,8 +1264,13 @@ export default function ChatInterface() {
                     </div>
                     <button
                         onClick={sendMessage}
-                        disabled={isLoading || !inputMessage.trim()}
+                        disabled={isLoading || !inputMessage.trim() || Boolean(creditInfo && creditInfo.canChat === false)}
                         className="w-12 h-12 bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-full transition-all flex items-center justify-center shadow-lg hover:shadow-xl"
+                        title={
+                            creditInfo && creditInfo.canChat === false 
+                                ? `Need ${creditInfo.chatCost} credits to send message`
+                                : "Send message"
+                        }
                     >
                         <PaperAirplaneIcon className="w-5 h-5" />
                     </button>
@@ -984,7 +1278,10 @@ export default function ChatInterface() {
 
                 {/* Helpful Hints */}
                 <div className="mt-2 text-xs text-gray-400 text-center">
-                    Ask about carbon footprints, renewable energy, or sustainable practices
+                    {creditInfo && creditInfo.canChat === false 
+                        ? `You need ${creditInfo.chatCost} AI credits to chat with Rin`
+                        : "Ask about carbon footprints, renewable energy, or sustainable practices"
+                    }
                 </div>
             </div>
 

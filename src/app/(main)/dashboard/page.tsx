@@ -1,12 +1,18 @@
 "use client"
 import { useAuth } from '@/contexts/AuthContext';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 
 export default function DashboardPage() {
     const { user, isLoading } = useAuth();
     const router = useRouter();
+    const [isClient, setIsClient] = useState(false);
+
+    // Ensure client-side rendering
+    useEffect(() => {
+        setIsClient(true);
+    }, []);
 
     // Redirect if user is pending
     useEffect(() => {
@@ -14,6 +20,11 @@ export default function DashboardPage() {
             router.push('/pending');
         }
     }, [user, isLoading, router]);
+
+    // Don't render anything until we're on the client side
+    if (!isClient) {
+        return <LoadingSpinner fullScreen />;
+    }
 
     if (isLoading) {
         return <LoadingSpinner fullScreen />;
@@ -26,7 +37,9 @@ export default function DashboardPage() {
     return (
         <div className="p-4 max-w-7xl mx-auto">
             <div className="mb-8">
-                <h1 className="text-3xl font-bold text-gray-900">Welcome, {user?.firstName}!</h1>
+                <h1 className="text-3xl font-bold text-gray-900">
+                    Welcome, {user.firstName || 'User'}!
+                </h1>
                 <p className="mt-2 text-gray-600">Manage your environmental sustainability initiatives</p>
             </div>
 
@@ -41,7 +54,7 @@ export default function DashboardPage() {
                         </div>
                         <h3 className="ml-3 text-lg font-medium text-gray-900">AI Assistant</h3>
                     </div>
-                    <p className="text-gray-600 mb-4">Chat with Rin Kazuki, your environmental sustainability expert</p>
+                    <p className="text-gray-600 mb-4">Chat with Rin Kazuki, your environmental sustainability teacher</p>
                     <a href="/ai-chat" className="inline-flex items-center text-green-600 hover:text-green-500">
                         Start Chat
                         <svg className="ml-1 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
