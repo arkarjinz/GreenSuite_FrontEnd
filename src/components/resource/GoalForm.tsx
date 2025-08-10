@@ -188,8 +188,10 @@ setResponseMessage("Goal analysis complete.");
 
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4 pt-20">
-      <div className="max-w-4xl w-full space-y-8">
+    <div className="min-h-screen pt-16">
+      
+    <div className=" flex flex-col items-center justify-center p-4 pb-8">
+      <div className="max-w-4xl w-full space-y-8 ">
         {/* Header */}
         <div className="text-center">
           {/*<h1 className="text-2xl font-bold text-gray-900 mb-2">GREENSUITE</h1>*/}
@@ -298,7 +300,7 @@ console.log("[DEBUG] Disabled months from backend:", submittedMonths);
         
 {resultData && (
   
-  <div className="mt-6 bg-white border-3 border-[#43a243] rounded-xl shadow-sm p-6 space-y-4 relative z-10">
+  <div className="mt-6 bg-white border-3 border-[#43a243] rounded-xl shadow-sm p-6 space-y-4 mb-8">
     
     <h3 className="text-2xl font-bold text-black-800 drop-shadow-[0_2px_1px_rgba(0,0,0,0.1)]">Goal Summary</h3>
 {/* Show exact backend message here */}
@@ -366,7 +368,7 @@ console.log(`🖼️ Rendering result:`, {
     
   </div>
 )}
-
+</div>
       </div>
     </div>
   );
