@@ -67,6 +67,7 @@ const activityFieldMap: Record<ActivityType, keyof FormData> = {
     year: currentYear.toString(),
 
   });
+  
   // Add state for submitted months - similar to goalform.tsx
   const [submittedMonths, setSubmittedMonths] = useState<string[]>([]);
 // Fetch submitted months whenever the year changes - similar to goalform.tsx
@@ -170,7 +171,7 @@ const handleSubmit = async () => {
         activityType: "ELECTRICITY",
         value: Number(formData.electricity),
         region: formData.region,
-        month: formData.month,
+        month: numericMonth,//formData.month,
         year: formData.year,
       });
     }
@@ -180,7 +181,7 @@ const handleSubmit = async () => {
         activityType: "WATER",
         value: Number(formData.water),
         region: formData.region,
-        month: formData.month,
+        month: numericMonth,//formData.month,
         year: formData.year,
       });
     }
@@ -190,7 +191,7 @@ const handleSubmit = async () => {
         activityType: "FUEL",
         value: Number(formData.fuel),
         region: formData.region,
-        month: formData.month,
+        month: numericMonth,//formData.month,
         year: formData.year,
         fuelType: formData.fuelType,
         unit: formData.unit
@@ -202,7 +203,7 @@ const handleSubmit = async () => {
         activityType: "WASTE",
         value: Number(formData.waste),
         region: formData.region,
-        month: formData.month,
+        month:numericMonth,// formData.month,
         year: formData.year,
         disposalMethod: formData.disposalMethod
       });

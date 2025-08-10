@@ -110,3 +110,173 @@ export const getSubmittedResourceMonths = async (year: number): Promise<string[]
     throw new Error(`Failed to get submitted months: ${error instanceof Error ? error.message : String(error)}`);
   }
 };
+// ===== NEW FUNCTIONS FOR EDIT FUNCTIONALITY =====
+
+// Type definitions for edit functionality
+export interface GetResourceDataParams {
+  month: string;
+  year: string;
+  region: string;
+}
+
+export interface ExistingResourceData {
+  electricity?: number;
+  water?: number;
+  fuel?: number;
+  waste?: number;
+  fuelType?: "gasoline" | "diesel" | "naturalGas";
+  unit?: "LITERS" | "CUBIC_METERS";
+  disposalMethod?: "recycled" | "landfilled" | "incinerated";
+  region: string;
+  month: string;
+  year: string;
+}
+
+export interface UpdateFootprintParams {
+  month: string;
+  year: string;
+  region: string;
+}
+/**
+ * Fetch existing resource data for a specific month/year/region for editing
+ */
+export const getResourceDataForMonth = async (
+  params: GetResourceDataParams
+): Promise<ExistingResourceData | null> => {
+  try {
+    const token = localStorage.getItem("token");
+    const companyId = localStorage.getItem("companyId");
+    
+    console.log("Fetching resource data for editing:", params);
+
+    const queryParams = new URLSearchParams({
+      month: params.month.toUpperCase(),
+      year: params.year,
+      region: params.region.toUpperCase(),
+      companyId: companyId || '',
+    });
+
+    const response = await fetch(`http://localhost:8080/api/carbon/resource-data?${queryParams}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token && { Authorization: `Bearer ${token}` }),
+      },
+    });
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        console.log("No existing data found for this period");
+        return null; // No data found for this period
+      }
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    console.log("Retrieved existing resource data:", data);
+    return data as ExistingResourceData;
+  } catch (error) {
+    console.error('Error fetching existing resource data:', error);
+    throw new Error(`Failed to fetch resource data: ${error instanceof Error ? error.message : String(error)}`);
+  }
+};
+
+/**
+ * Update existing footprint data
+ */
+/*export const updateFootprint = async (
+  inputs: CarbonInput[],
+  params: UpdateFootprintParams
+): Promise<any> => {
+  try {
+    const token = localStorage.getItem("token");
+    const companyId = localStorage.getItem("companyId");
+    
+    console.log("Updating footprint data:", { inputs, params });
+
+    const response = await fetch('http://localhost:8080/api/carbon/update', {
+      method: 'PUT', // Use PUT for updates
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token && { Authorization: `Bearer ${token}` }),
+      },
+      body: JSON.stringify({
+        inputs: inputs.map(input => ({
+          ...input,
+          userId: localStorage.getItem("userId"),
+          companyId: companyId,
+          activityType: input.activityType.toUpperCase(),
+          month: input.month?.toUpperCase(),
+          region: input.region?.toUpperCase(),
+          fuelType: input.fuelType?.toUpperCase(),
+          unit: input.unit?.toUpperCase(),
+          disposalMethod: input.disposalMethod?.toUpperCase(),
+        })),
+        month: params.month.toUpperCase(),
+        year: params.year,
+        region: params.region.toUpperCase(),
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      console.error('Update failed with status:', response.status, errorData);
+      throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+    }
+
+    const result = await response.json();
+    console.log('Update successful:', result);
+    return result;
+  } catch (error) {
+    console.error('Error updating footprint:', error);
+    throw new Error(`Update failed: ${error instanceof Error ? error.message : String(error)}`);
+  }
+};*/
+export const updateFootprint = async (
+  inputs: CarbonInput[],
+  params: UpdateFootprintParams
+): Promise<any> => {
+  try {
+    const token = localStorage.getItem("token");
+    
+    // Create query parameters
+    const queryParams = new URLSearchParams({
+      month: params.month.toUpperCase(),
+      year: params.year,
+      region: params.region.toUpperCase()
+    });
+
+    const response = await fetch(
+      `http://localhost:8080/api/carbon/update?${queryParams}`,
+      {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+        // Send JUST the array in body
+        body: JSON.stringify(inputs.map(input => ({
+          ...input,
+          userId: localStorage.getItem("userId"),
+          companyId: localStorage.getItem("companyId"),
+          activityType: input.activityType.toUpperCase(),
+          month: input.month?.toUpperCase(),
+          region: input.region?.toUpperCase(),
+          fuelType: input.fuelType?.toUpperCase(),
+          unit: input.unit?.toUpperCase(),
+          disposalMethod: input.disposalMethod?.toUpperCase(),
+        })))
+      }
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    throw new Error(`Update failed: ${error instanceof Error ? error.message : String(error)}`);
+  }
+};
