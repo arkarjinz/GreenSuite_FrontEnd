@@ -41,7 +41,9 @@ const ReportTable = () => {
 
   // Function to handle edit button click for goals (if you have goal editing)
   const handleEditGoal = (goalId: string) => {
-    router.push(`/goal/edit/${goalId}`);
+    //router.push(`/goal/edit/${goalId}`);
+    console.log('Editing goal with ID:', goalId); // Debug log
+  router.push(`/resource/goal/edit/${goalId}`); // Updated path to match your file structure
   };
 
   // Group activities by month-year-region for the edit button

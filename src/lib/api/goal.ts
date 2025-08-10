@@ -13,6 +13,7 @@ export interface GoalCheckRequest {
 export interface CategoryResult {
   //isMet: boolean;
   goalMet: boolean;
+  //isGoalMet: boolean;        // ← Changed to match backend
   achievedPercent: number;
   remainingPercent: number;
   dataAvailable?: boolean;
