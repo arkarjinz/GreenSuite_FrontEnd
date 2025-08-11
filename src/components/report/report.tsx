@@ -8,11 +8,15 @@ import { fetchReportData } from '@/lib/api/report';
 import type { CarbonGoal } from '@/types/goalreport';
 import { fetchGoalData } from '@/lib/api/goalreport';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { Edit3, Edit } from 'lucide-react';//edit
+
 
 const ReportTable = () => {
   const [data, setData] = useState<CarbonActivity[]>([]);
   const [loading, setLoading] = useState(true);
   const [goals, setGoals] = useState<CarbonGoal[]>([]);
+  const router = useRouter();//edit
   useEffect(() => {
     const loadData = async () => {
       try {
@@ -29,6 +33,25 @@ const ReportTable = () => {
 
     loadData();
   }, []);
+  // Function to handle edit button click for resource data
+  const handleEditResource = (month: string, year: string, region: string) => {
+    const compositeId = `${year}-${month}-${region}`;
+    router.push(`/resource/edit/${compositeId}?month=${encodeURIComponent(month)}&year=${encodeURIComponent(year)}&region=${encodeURIComponent(region)}`);
+  };
+
+  // Function to handle edit button click for goals (if you have goal editing)
+  const handleEditGoal = (goalId: string) => {
+    //router.push(`/goal/edit/${goalId}`);
+    console.log('Editing goal with ID:', goalId); // Debug log
+  router.push(`/resource/goal/edit/${goalId}`); // Updated path to match your file structure
+  };
+
+  // Group activities by month-year-region for the edit button
+  const getEditKey = (activity: CarbonActivity) => `${activity.month}-${activity.year}-${activity.region}`;
+  
+  // Create a map to track which combinations we've already shown edit buttons for
+  const editButtonsShown = new Set<string>();
+
 
   if (loading) {
     return <p className="p-4">Loading...</p>;
@@ -59,6 +82,14 @@ const ReportTable = () => {
           {data.map((activity) => {
              console.log("Activity timestamp:", activity.submittedAt);
              console.log("Parsed:", new Date(activity.submittedAt));
+             //edit 
+             const editKey = getEditKey(activity);
+                const showEditButton = !editButtonsShown.has(editKey);
+                if (showEditButton) {
+                  editButtonsShown.add(editKey);
+                }
+                //edit
+             
              return(
             <tr
               key={activity.id}
@@ -77,18 +108,30 @@ const ReportTable = () => {
               <td className="px-6 py-4">{activity.disposalMethod || '-'}</td>
               <td className="px-6 py-4">{new Date(activity.submittedAt).toLocaleString()}</td>
               <td className="px-6 py-4">
-                <Link
+                {/*<Link
                   href={`/edit-report/${activity.id}`}
                   className="font-medium text-blue-600 dark:text-blue-500 hover:underline"
                 >
                   Edit
-                </Link>
+                </Link>*/}
+                {showEditButton ? (
+                        <button
+                          onClick={() => handleEditResource(activity.month, activity.year, activity.region)}
+                          className="inline-flex items-center gap-1 font-medium text-blue-600 dark:text-blue-500 hover:text-blue-800 hover:underline transition-colors duration-200"
+                        >
+                          <Edit3 size={16} />
+                          Edit
+                        </button>
+                      ) : (
+                        <span className="text-gray-400">-</span>
+                      )}
               </td>
             </tr>
           );
 })}
         </tbody>
       </table>
+      {/*carbon goals table*/}
       <h2 className="mt-8 mb-4 text-lg font-semibold">Carbon Goals</h2>
 
 <table className="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400 mb-10">
@@ -131,7 +174,15 @@ const ReportTable = () => {
         <td className="px-6 py-4">{goal.wasteGoalMet ? 'Yes' : 'No'}</td>
         <td className="px-6 py-4">{goal.createdAt ? new Date(goal.createdAt).toLocaleString() : '-'}</td>
         <td className="px-6 py-4">{goal.updatedAt ? new Date(goal.updatedAt).toLocaleString() : '-'}</td>
-     
+     <td className="px-6 py-4">
+                    <button
+                      onClick={() => handleEditGoal(goal.id.toString())}
+                      className="inline-flex items-center gap-1 font-medium text-purple-600 dark:text-purple-500 hover:text-purple-800 hover:underline transition-colors duration-200"
+                    >
+                      <Edit size={16} />
+                      Edit Goal
+                    </button>
+                  </td>
       </tr>
     ))}
   </tbody>
