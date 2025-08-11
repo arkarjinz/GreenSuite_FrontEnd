@@ -35,6 +35,7 @@ const PieChart = ({ dataValues }: { dataValues: number[] }) => {
 
   const options = {
     responsive: true,
+    maintainAspectRatio: false, // Add this to allow custom sizing
     plugins: {
       legend: { display: false },
       title: { display: false },
@@ -51,21 +52,20 @@ const PieChart = ({ dataValues }: { dataValues: number[] }) => {
     }
   };
 
-
   return (
-    <div className="w-full max-w-4xl mx-auto p-6 bg-white rounded-lg shadow">
-      <h2 className="text-xl font-semibold text-green-800 mb-6 text-center">
+    <div className="border-3 border-[#43a243] rounded-xl shadow-sm w-full max-w-md mx-auto p-4 bg-white">
+      <h2 className="text-lg font-semibold text-green-800 mb-4 text-center">
         Carbon Emissions Breakdown
       </h2>
-      <div className="flex flex-row md:flex-row gap-8 items-center justify-center">
-        <div className="w-64 h-64">
+      <div className="flex flex-col md:flex-row gap-4 items-center justify-center">
+        <div className="w-40 h-40"> {/* Reduced size */}
           <Pie data={data} options={options} />
         </div>
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-2 text-sm"> {/* Smaller text and gaps */}
           {labels.map((label, index) => (
-            <div key={label} className="flex items-center gap-3">
-              <div className="w-4 h-4 rounded-full" style={{ backgroundColor: colors[index] }} />
-              <span className="text-gray-700 font-medium">{label}</span>
+            <div key={label} className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full" style={{ backgroundColor: colors[index] }} />
+              <span className="text-gray-700">{label}</span>
             </div>
           ))}
         </div>
@@ -73,6 +73,5 @@ const PieChart = ({ dataValues }: { dataValues: number[] }) => {
     </div>
   );
 };
-
 
 export default PieChart;

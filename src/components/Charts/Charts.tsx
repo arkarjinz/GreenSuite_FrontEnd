@@ -1,12 +1,16 @@
 "use client"
+import axios from "axios";
 
 import React, { useState, useEffect } from "react";
 import { Bar, Line } from 'react-chartjs-2';
 import PieChart from '@/components/Charts/piechart';
+import GoalSummary from '@/components/Charts/GoalSummary';
 import { fetchCarbonTotalsByYear } from '@/lib/api/extractDataForCharts';
 import { useAuth } from '@/contexts/AuthContext';
 import { fetchCarbonTotalsByYearAndMonth } from "@/lib/api/extractCarbonBreakdown";
 import type { CarbonActivity } from "@/types/carbon";
+import type { GoalSummaryResponse } from '@/types/goalreport';
+
 
 
 
@@ -55,6 +59,7 @@ const ChartToggle = () => {
     const index = elements[0].index;
     setSelectedMonthIndex(index);
     fetchPieBreakdownData(index + 1);
+    fetchGoalData(index + 1);
   };
 
 
@@ -68,7 +73,8 @@ const ChartToggle = () => {
 
   const [chartOptions, setChartOptions] = useState({});
   const [isLineChart, setIsLineChart] = useState(false);
-  const [selectedYear, setSelectedYear] = useState("2022"); // ✅ moved outside useEffect
+  const [selectedYear, setSelectedYear] = useState("2025"); // ✅ moved outside useEffect
+  const [goalData, setGoalData] = useState<GoalSummaryResponse | null>(null);
 
   const fetchPieBreakdownData = async (month: number) => {
     if (!companyId) return;
@@ -105,7 +111,39 @@ const ChartToggle = () => {
   };
 
 
+const fetchGoalData = async (month: number) => {
+  if (!companyId) return;
 
+  try {
+    const token = localStorage.getItem("token");
+    if (!token) throw new Error("No token found");
+
+    const monthStr = String(month).padStart(2, '0');
+    const response = await fetch(
+      `http://localhost:8080/api/carbon/goals/monthly?month=${monthStr}&year=${selectedYear}`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || "Failed to fetch goal data");
+    }
+
+    const data = await response.json();
+    setGoalData(data);
+  } catch (error) {
+    console.error("Error:", {
+      error: error instanceof Error ? error.message : "Unknown error",
+      month,
+      year: selectedYear,
+    });
+    setGoalData(null);
+  }
+};
 
   const handleYearChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const year = e.target.value;
@@ -114,6 +152,7 @@ const ChartToggle = () => {
 
   const updateChartForYear = async (year: string) => {
     setSelectedYear(year);
+    setGoalData(null);
 
     const data: CarbonDataItem[] = await fetchCarbonTotalsByYear(companyId, year);
     const monthLabels = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -163,7 +202,7 @@ const ChartToggle = () => {
 
   return (
     <>
-      <div className="w-full md:col-span-2 m-auto p-4 border rounded-lg bg-white space-y-4">
+      <div className="w-full md:col-span-2 m-auto p-4 border-3 border-[#43a243] rounded-xl shadow-sm bg-white space-y-4">
         <div className="flex justify-between items-center mb-4">
           <button
             onClick={() => setIsLineChart(prev => !prev)}
@@ -177,16 +216,17 @@ const ChartToggle = () => {
             value={selectedYear}
             onChange={handleYearChange}
           >
-            <option value="2021" >2021</option>
-            <option value="2022" >2022</option>
-            <option value="2023" >2023</option>
-            <option value="2024" >2024</option>
             <option value="2025" >2025</option>
             <option value="2026" >2026</option>
             <option value="2027" >2027</option>
             <option value="2028" >2028</option>
             <option value="2029" >2029</option>
             <option value="2030" >2030</option>
+            <option value="2031" >2031</option>
+            <option value="2032" >2032</option>
+            <option value="2033" >2033</option>
+            <option value="2034" >2034</option>
+            <option value="2035" >2035</option>
 
           </select>
         </div>
@@ -212,10 +252,19 @@ const ChartToggle = () => {
 
       <div className="flex flex-col items-center">
         <PieChart dataValues={pieData} />
-        
+
         <div className="bg-green">
-          Here will be the goal
-          </div>
+          {goalData && (
+            <GoalSummary
+              message={goalData.message}
+              results={goalData.results}
+              electricityGoalMet={goalData.electricityGoalMet}
+              fuelGoalMet={goalData.fuelGoalMet}
+              waterGoalMet={goalData.waterGoalMet}
+              wasteGoalMet={goalData.wasteGoalMet}
+            />
+          )}
+        </div>
       </div>
     </>
   );
