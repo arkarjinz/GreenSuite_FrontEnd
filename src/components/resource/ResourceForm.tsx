@@ -35,7 +35,7 @@ type FormData = {
   year: string; 
 };
 //const [submittedMonths, setSubmittedMonths] = React.useState<string[]>([]);
-const router = useRouter();
+
 const getNumericMonth = (monthName: string): string => {
   const date = new Date(`${monthName} 1, 2000`);
   const month = date.getMonth() + 1;
@@ -53,6 +53,7 @@ const activityFieldMap: Record<ActivityType, keyof FormData> = {
   WASTE: 'waste'
 } as const;
   const ResourceForm: React.FC = () => {
+    const router = useRouter();
     const currentYear = getCurrentYear();
   const [formData, setFormData] = useState<FormData>({
     electricity: "",
@@ -218,7 +219,7 @@ const handleSubmit = async () => {
     const result = await calculateFootprint(inputs); // Send array of inputs
     console.log("Calculation result:", result);
 // Redirect to results page with parameters
-    router.push(`/results/${numericMonth}/${formData.year}/${formData.region}`);
+    router.push(`/results/${numericMonth}/${formData.year}?region=${formData.region}`);
   } catch (error) {
     console.error("API Error:", error);
   } finally {

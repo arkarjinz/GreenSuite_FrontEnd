@@ -4,22 +4,41 @@ import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Toolti
 import { useRouter } from 'next/navigation';
 import Button from '@/components/ui/Button';
 import { Lightbulb, Fuel, Droplet, Trash2 } from 'lucide-react';
+import { getChartData } from '@/lib/api/carbon'; // Import the updated function
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
+type ChartDataItem = {
+  name: string;
+  value: number;
+  category?: string; // For bar chart data
+};
 
+type ChartData = {
+  pieData: ChartDataItem[];
+  barData: ChartDataItem[];
+  totalFootprint: number;
+  month: string;
+  year: string;
+  region: string;
+};
 const ResultsPage = ({ params }: { params: { month: string, year: string, region: string } }) => {
-  const [chartData, setChartData] = useState<any>(null);
+  const [chartData, setChartData] = useState<ChartData|null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await fetch(`/api/carbon/chart-data?month=${params.month}&year=${params.year}&region=${params.region}`);
-        const data = await response.json();
+        console.log("Results page params:", params);
+        //const response = await fetch(`/api/carbon/chart-data?month=${params.month}&year=${params.year}&region=${params.region}`);
+       // const data = await response.json();
+       // Call your backend directly instead of the Next.js API route
+      const data = await getChartData(params.month, params.year, params.region);
+      console.log("Chart data received:", data);
         setChartData(data);
       } catch (error) {
         console.error('Error fetching chart data:', error);
+      //setError(error instanceof Error ? error.message : 'Unknown error');
       } finally {
         setIsLoading(false);
       }
@@ -107,13 +126,23 @@ const ResultsPage = ({ params }: { params: { month: string, year: string, region
                     outerRadius={80}
                     fill="#8884d8"
                     dataKey="value"
-                    label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                    label={({ name, value }:any) => {
+                    const percent = ((value / chartData.totalFootprint) * 100).toFixed(0);
+                    return `${name}: ${percent}%`;
+  }}
+                    //label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                    
+                    //</PieChart>label={({ name, percent }: { name: string; percent: number }) => 
+                   //`${name}: ${(percent * 100).toFixed(0)}%`}
+                   // label={function({ name, percent }: { name: string; percent: number }) {
+                   // return `${name}: ${(percent * 100).toFixed(0)}%`;
+ // }}
                   >
-                    {chartData.pieData.map((entry: any, index: number) => (
+                    {chartData.pieData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Pie>
-                  <Tooltip formatter={(value) => [`${value} kg CO₂`, 'Emissions']} />
+                  <Tooltip formatter={(value:number) => [`${value} kg CO₂`, 'Emissions']} />
                   <Legend />
                 </PieChart>
               </ResponsiveContainer>
@@ -150,44 +179,7 @@ const ResultsPage = ({ params }: { params: { month: string, year: string, region
           </div>
         </div>
 
-        {/* Recommendations Section */}
-        <div className="bg-white rounded-xl shadow-md p-6">
-          <h2 className="text-xl font-semibold mb-4">Reduction Recommendations</h2>
-          <div className="space-y-4">
-            <div className="p-4 bg-blue-50 rounded-lg">
-              <h3 className="font-medium text-blue-800">Electricity</h3>
-              <ul className="list-disc list-inside text-sm text-gray-700 mt-2">
-                <li>Switch to LED lighting</li>
-                <li>Install solar panels</li>
-                <li>Use energy-efficient appliances</li>
-              </ul>
-            </div>
-            <div className="p-4 bg-teal-50 rounded-lg">
-              <h3 className="font-medium text-teal-800">Water</h3>
-              <ul className="list-disc list-inside text-sm text-gray-700 mt-2">
-                <li>Install low-flow fixtures</li>
-                <li>Fix leaks promptly</li>
-                <li>Collect rainwater for irrigation</li>
-              </ul>
-            </div>
-            <div className="p-4 bg-amber-50 rounded-lg">
-              <h3 className="font-medium text-amber-800">Fuel</h3>
-              <ul className="list-disc list-inside text-sm text-gray-700 mt-2">
-                <li>Switch to electric vehicles</li>
-                <li>Improve fleet fuel efficiency</li>
-                <li>Implement telecommuting policies</li>
-              </ul>
-            </div>
-            <div className="p-4 bg-orange-50 rounded-lg">
-              <h3 className="font-medium text-orange-800">Waste</h3>
-              <ul className="list-disc list-inside text-sm text-gray-700 mt-2">
-                <li>Increase recycling programs</li>
-                <li>Reduce packaging waste</li>
-                <li>Compost organic waste</li>
-              </ul>
-            </div>
-          </div>
-        </div>
+        
       </div>
     </div>
   );
