@@ -20,8 +20,11 @@ export default function DashboardPage() {
     }
 
     return (
-        <div className="p-4">
-            <div className='p-8 grid md:grid-cols-3 grid-cols-1 gap-4 bg-gray-100'>
+        <div className="p-2">
+            <div className='p-8 grid md:grid-cols-3 grid-cols-1 gap-4 bg-gray-100'
+            style={{
+      background: "radial-gradient(circle,rgba(87, 199, 133, 1) 0%, rgba(255, 255, 255, 1) 100%)"
+    }}>
                 <ChartToggle />
             </div>
         </div>

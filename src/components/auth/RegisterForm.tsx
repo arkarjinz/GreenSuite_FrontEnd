@@ -418,7 +418,7 @@ export default function RegisterForm() {
                                                         >
                                                             <div className="font-medium">{company.name}</div>
                                                             <div className="text-sm text-gray-600">{company.address}</div>
-                                                            <div className="text-sm text-gray-500">{company.industry}</div>
+                                                              <div className="text-sm text-gray-500">{company.industry}</div>
                                                         </li>
                                                     ))}
                                                 </ul>
