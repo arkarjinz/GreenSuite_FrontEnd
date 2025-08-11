@@ -78,3 +78,35 @@ export const calculateFootprint = async (data: CarbonInput[]) => {
     throw new Error(`Calculation failed: ${error instanceof Error ? error.message : String(error)}`);
   }
 };
+//Add this new function to get submitted resource months
+export const getSubmittedResourceMonths = async (year: number): Promise<string[]> => {
+  try {
+    const token = localStorage.getItem("token");
+    const companyId = localStorage.getItem("companyId");
+    
+    console.log("Fetching submitted resource months for year:", year);
+
+    const response = await fetch(`http://localhost:8080/api/carbon/submitted-months?year=${year}&companyId=${companyId}`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        ...(token && { Authorization: `Bearer ${token}` }),
+      },
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+    }
+
+    const result = await response.json();
+    console.log("Submitted resource months response:", result);
+// Assuming the backend returns an array of month strings like ["01", "03", "07"]
+    // or full date strings like ["2025-01", "2025-03"] that you need to extract months from
+    return result as string[];
+    
+  } catch (error) {
+    console.error("Failed to fetch submitted resource months:", error);
+    throw new Error(`Failed to get submitted months: ${error instanceof Error ? error.message : String(error)}`);
+  }
+};
