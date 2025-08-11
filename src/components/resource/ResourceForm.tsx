@@ -3,6 +3,7 @@
 import type { CarbonInput } from "@/types/carbon";
 import { useEffect } from "react";
 import React, { useState } from "react";
+import { useRouter } from 'next/navigation';
 import { Calendar,Globe2,Zap, Fuel, Droplet, Trash2 } from "lucide-react";
 import Button from "@/components/ui/Button"; 
 import { calculateFootprint } from '@/lib/api/carbon';
@@ -34,7 +35,7 @@ type FormData = {
   year: string; 
 };
 //const [submittedMonths, setSubmittedMonths] = React.useState<string[]>([]);
-
+const router = useRouter();
 const getNumericMonth = (monthName: string): string => {
   const date = new Date(`${monthName} 1, 2000`);
   const month = date.getMonth() + 1;
@@ -216,7 +217,8 @@ const handleSubmit = async () => {
 
     const result = await calculateFootprint(inputs); // Send array of inputs
     console.log("Calculation result:", result);
-
+// Redirect to results page with parameters
+    router.push(`/results/${numericMonth}/${formData.year}/${formData.region}`);
   } catch (error) {
     console.error("API Error:", error);
   } finally {

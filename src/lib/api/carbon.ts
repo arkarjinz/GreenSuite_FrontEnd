@@ -280,3 +280,9 @@ export const updateFootprint = async (
     throw new Error(`Update failed: ${error instanceof Error ? error.message : String(error)}`);
   }
 };
+//to show result for calculated footprint
+export const getChartData = async (month: string, year: string, region: string) => {
+  const response = await fetch(`/api/carbon/chart-data?month=${month}&year=${year}&region=${region}`);
+  if (!response.ok) throw new Error('Failed to fetch chart data');
+  return await response.json();
+};
