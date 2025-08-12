@@ -219,7 +219,6 @@ const handleSubmit = async () => {
     const result = await calculateFootprint(inputs); // Send array of inputs
     console.log("Calculation result:", result);
 // Redirect to results page with parameters
-    //router.push(`/results/${numericMonth}/${formData.year}/${formData.region}`);
     router.push(`/results/${numericMonth}/${formData.year}?region=${formData.region}`);
   } catch (error) {
     console.error("API Error:", error);

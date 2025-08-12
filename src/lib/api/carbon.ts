@@ -286,6 +286,8 @@ export const updateFootprint = async (
   if (!response.ok) throw new Error('Failed to fetch chart data');
   return await response.json();
 };*/
+// Add this to your carbon.ts file (replace the existing getChartData function)
+
 export const getChartData = async (month: string, year: string, region: string) => {
   try {
     const token = localStorage.getItem("token");
