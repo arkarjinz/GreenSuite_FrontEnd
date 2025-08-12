@@ -4,7 +4,7 @@ import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Toolti
 import { useRouter } from 'next/navigation';
 import Button from '@/components/ui/Button';
 import { Lightbulb, Fuel, Droplet, Trash2 } from 'lucide-react';
-
+import { getChartData } from '@/lib/api/carbon'; // Import the updated function
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
 
 const ResultsPage = ({ params }: { params: { month: string, year: string, region: string } }) => {
