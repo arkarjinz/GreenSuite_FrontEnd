@@ -281,8 +281,44 @@ export const updateFootprint = async (
   }
 };
 //to show result for calculated footprint
-export const getChartData = async (month: string, year: string, region: string) => {
+/*export const getChartData = async (month: string, year: string, region: string) => {
   const response = await fetch(`/api/carbon/chart-data?month=${month}&year=${year}&region=${region}`);
   if (!response.ok) throw new Error('Failed to fetch chart data');
   return await response.json();
+};*/
+export const getChartData = async (month: string, year: string, region: string) => {
+  try {
+    const token = localStorage.getItem("token");
+    const companyId = localStorage.getItem("companyId");
+    
+    console.log("Fetching chart data for:", { month, year, region });
+
+    const queryParams = new URLSearchParams({
+      month: month.toUpperCase(),
+      year: year,
+      region: region.toUpperCase(),
+      ...(companyId && { companyId: companyId }),
+    });
+
+    const response = await fetch(`http://localhost:8080/api/carbon/chart-data?${queryParams}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token && { Authorization: `Bearer ${token}` }),
+      },
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      console.error('Chart data fetch failed:', response.status, errorData);
+      throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+    }
+
+    const result = await response.json();
+    console.log('Chart data retrieved successfully:', result);
+    return result;
+  } catch (error) {
+    console.error('Failed to fetch chart data:', error);
+    throw new Error(`Failed to fetch chart data: ${error instanceof Error ? error.message : String(error)}`);
+  }
 };
