@@ -53,7 +53,7 @@ const activityFieldMap: Record<ActivityType, keyof FormData> = {
   WASTE: 'waste'
 } as const;
   const ResourceForm: React.FC = () => {
-    
+    const router = useRouter();
     const currentYear = getCurrentYear();
   const [formData, setFormData] = useState<FormData>({
     electricity: "",
