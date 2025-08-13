@@ -152,12 +152,14 @@ const AuthenticatedNav = ({ user, logout }: { user: AuthUser | null; logout: () 
                                     <NavLink href="/ai-chat/landing" icon={SparklesIcon}>Meet Rin</NavLink>
             <NavLink href="/ai-chat" icon={ChatBubbleLeftRightIcon}>AI Assistant</NavLink>
             <NavLink href="/credits" icon={CreditCardIcon}>Credits</NavLink>
+            <NavLink href="/payment" icon={CreditCardIcon}>Payment</NavLink>
             <NavLink href="/carbon" icon={CalculatorIcon}>Carbon Calculator</NavLink>
             <NavLink href="/reports" icon={DocumentChartBarIcon}>Reports</NavLink>
             {user?.companyRole === 'OWNER' && (
                 <>
                     <NavLink href="/dashboard/owner/users" icon={UsersIcon}>Manage Users</NavLink>
                     <NavLink href="/dashboard/owner/rejected" icon={Cog6ToothIcon}>Rejected Users</NavLink>
+                    <NavLink href="/dashboard/owner/payment" icon={CreditCardIcon}>Payment Admin</NavLink>
                 </>
             )}
         </div>
@@ -220,12 +222,14 @@ const MobileAuthenticatedNav = ({ user, logout, onClose }: { user: AuthUser | nu
                         <MobileNavLink href="/ai-chat/landing" icon={SparklesIcon} onClick={onClose}>Meet Rin</MobileNavLink>
                         <MobileNavLink href="/ai-chat" icon={ChatBubbleLeftRightIcon} onClick={onClose}>AI Assistant</MobileNavLink>
                         <MobileNavLink href="/credits" icon={CreditCardIcon} onClick={onClose}>Credits</MobileNavLink>
+                        <MobileNavLink href="/payment" icon={CreditCardIcon} onClick={onClose}>Payment</MobileNavLink>
                         <MobileNavLink href="/carbon" icon={CalculatorIcon} onClick={onClose}>Carbon Calculator</MobileNavLink>
                         <MobileNavLink href="/reports" icon={DocumentChartBarIcon} onClick={onClose}>Reports</MobileNavLink>
                         {user?.companyRole === 'OWNER' && (
                             <>
                                 <MobileNavLink href="/dashboard/owner/users" icon={UsersIcon} onClick={onClose}>Manage Users</MobileNavLink>
                                 <MobileNavLink href="/dashboard/owner/rejected" icon={Cog6ToothIcon} onClick={onClose}>Rejected Users</MobileNavLink>
+                                <MobileNavLink href="/dashboard/owner/payment" icon={CreditCardIcon} onClick={onClose}>Payment Admin</MobileNavLink>
                             </>
                         )}
                     </div>

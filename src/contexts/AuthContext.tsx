@@ -16,6 +16,9 @@ interface AuthUser {
     approvalStatus: 'PENDING' | 'APPROVED' | 'REJECTED';
     rejectionCount?: number;
     isBanned?: boolean;
+    aiCredits?: number;
+    canChat?: boolean;
+    isLowOnCredits?: boolean;
 }
 
 interface LoginDto {
@@ -43,6 +46,7 @@ interface AuthContextType {
     login: (loginDto: LoginDto) => Promise<{ success: boolean; status?: string; message?: string }>;
     register: (registerDto: RegisterDto) => Promise<void>;
     logout: () => void;
+    updateUser: (updatedUser: AuthUser) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -53,6 +57,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const [isLoading, setIsLoading] = useState(false);
     const [isInitialized, setIsInitialized] = useState(false);
     const router = useRouter();
+
+    // Update user function
+    const updateUser = useCallback((updatedUser: AuthUser) => {
+        setUser(updatedUser);
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+    }, []);
 
     // Logout function
     const logout = useCallback(() => {
@@ -287,7 +297,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 isLoading,
                 login,
                 register,
-                logout
+                logout,
+                updateUser
             }}
         >
             {children}

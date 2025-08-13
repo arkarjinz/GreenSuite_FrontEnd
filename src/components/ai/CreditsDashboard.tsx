@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { CreditCardIcon, SparklesIcon, ShoppingCartIcon, ChartBarIcon, ExclamationTriangleIcon, CheckCircleIcon } from '@heroicons/react/24/outline';
-import { aiCreditsApi } from '@/lib/api';
+import { aiCreditsApi, paymentApi } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface CreditStats {
@@ -19,13 +19,6 @@ interface CreditStats {
     subscriptionTier?: string;
     maxCredits?: number;
     canReceiveCredits?: boolean;
-    
-    // Auto-refill stats
-    autoRefillEnabled?: boolean;
-    lastAutoRefill?: string;
-    nextAutoRefill?: string;
-    autoRefillRate?: number;
-    autoRefillInterval?: number;
 }
 
 interface PricingTier {
@@ -40,10 +33,13 @@ export default function CreditsDashboard() {
     const { user, updateUser } = useAuth();
     const [creditStats, setCreditStats] = useState<CreditStats | null>(null);
     const [pricingInfo, setPricingInfo] = useState<any>(null);
+    const [paymentAccount, setPaymentAccount] = useState<any>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isPurchasing, setIsPurchasing] = useState(false);
     const [purchaseSuccess, setPurchaseSuccess] = useState(false);
     const [isClient, setIsClient] = useState(false);
+    const [showPaymentModal, setShowPaymentModal] = useState(false);
+    const [selectedTier, setSelectedTier] = useState<any>(null);
 
     // Ensure client-side rendering
     useEffect(() => {
@@ -63,15 +59,34 @@ export default function CreditsDashboard() {
             setIsLoading(true);
             const [statsResponse, pricingResponse] = await Promise.all([
                 aiCreditsApi.getCreditBalance(),
-                aiCreditsApi.getCreditPricing()
+                paymentApi.getCreditPricing()
             ]);
 
-            if (statsResponse.success) {
+            if (statsResponse.status === 'success') {
                 setCreditStats(statsResponse.data);
             }
 
-            if (pricingResponse.success) {
+            if (pricingResponse.status === 'success') {
                 setPricingInfo(pricingResponse.data);
+            }
+
+            // Create a new payment account each time (backend doesn't link userId properly)
+            try {
+                const createResponse = await paymentApi.createPaymentAccount(50.0);
+                if (createResponse.status === 'success') {
+                    setPaymentAccount(createResponse.data);
+                }
+            } catch (createError) {
+                console.log('Failed to create payment account, using demo data');
+                // Create demo account for display
+                setPaymentAccount({
+                    accountNumber: 'GreenSuite' + Math.floor(Math.random() * 90000) + 10000,
+                    userName: user?.firstName + ' ' + user?.lastName || 'Demo User',
+                    balance: 50.0,
+                    creditPoints: 50,
+                    status: 'ACTIVE',
+                    createdDate: new Date().toISOString()
+                });
             }
         } catch (error) {
             console.error('Error loading credit data:', error);
@@ -81,8 +96,7 @@ export default function CreditsDashboard() {
                 chatCost: 2,
                 canChat: true,
                 possibleChats: 25,
-                isLowOnCredits: false,
-                autoRefillEnabled: false
+                isLowOnCredits: false
             });
             
             // Set default pricing info
@@ -129,13 +143,26 @@ export default function CreditsDashboard() {
     }
 
     const handlePurchase = async (tierName: string, tier: PricingTier) => {
+        if (!paymentAccount) {
+            setSelectedTier({ tierName, tier });
+            setShowPaymentModal(true);
+            return;
+        }
+
         try {
             setIsPurchasing(true);
             
-            // For demo purposes - in real implementation, integrate with Stripe/PayPal
-            const response = await aiCreditsApi.purchaseCredits(tier.credits, 'demo_payment');
+            const purchaseRequest = {
+                accountNumber: paymentAccount.accountNumber,
+                paymentMethod: 'CARD',
+                creditPackage: tierName.toUpperCase(),
+                creditAmount: tier.credits,
+                amount: tier.price
+            };
             
-            if (response.success) {
+            const response = await paymentApi.purchaseCredits(purchaseRequest);
+            
+            if (response.status === 'success') {
                 setPurchaseSuccess(true);
                 setTimeout(() => setPurchaseSuccess(false), 5000);
                 
@@ -143,7 +170,7 @@ export default function CreditsDashboard() {
                 await loadCreditData();
                 
                 // Update user context
-                if (updateUser && creditStats) {
+                if (updateUser && creditStats && user) {
                     updateUser({
                         ...user,
                         aiCredits: (user.aiCredits || 0) + tier.credits,
@@ -223,6 +250,27 @@ export default function CreditsDashboard() {
                     </div>
                 )}
 
+                {/* Payment Account Status */}
+                {paymentAccount && (
+                    <div className="mb-8 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-2xl p-6 shadow-lg">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-3">
+                                <CreditCardIcon className="w-8 h-8" />
+                                <div>
+                                    <h3 className="text-xl font-bold">Payment Account Active</h3>
+                                    <p className="text-blue-100">
+                                        Account: {paymentAccount.accountNumber} | Balance: ${paymentAccount.balance.toFixed(2)}
+                                    </p>
+                                </div>
+                            </div>
+                            <div className="text-right">
+                                <div className="text-2xl font-bold">${paymentAccount.balance.toFixed(2)}</div>
+                                <div className="text-blue-100 text-sm">Available Balance</div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
                 {/* Current Status Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
                     {/* Current Credits */}
@@ -275,18 +323,18 @@ export default function CreditsDashboard() {
                     </div>
                 </div>
 
-                {/* Auto-Refill Information */}
-                {creditStats?.autoRefillEnabled && (
+                {/* Credit Status Information */}
+                {creditStats?.canReceiveCredits && (
                     <div className="mb-8 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-2xl p-6 shadow-lg">
                         <div className="flex items-center space-x-3">
                             <SparklesIcon className="w-8 h-8" />
                             <div>
-                                <h3 className="text-xl font-bold">Auto-Refill Active! 🎉</h3>
+                                <h3 className="text-xl font-bold">Credits Available! 🎉</h3>
                                 <p className="text-blue-100">
-                                    You receive {creditStats.autoRefillRate || 1} credit every {creditStats.autoRefillInterval || 5} minutes automatically.
-                                    {creditStats.nextAutoRefill && (
+                                    You can receive more credits up to your subscription tier limit.
+                                    {creditStats.maxCredits && (
                                         <span className="block mt-1">
-                                            Next refill: {new Date(creditStats.nextAutoRefill).toLocaleTimeString()}
+                                            Maximum credits: {creditStats.maxCredits}
                                         </span>
                                     )}
                                 </p>
@@ -343,12 +391,19 @@ export default function CreditsDashboard() {
                                     className={`bg-white rounded-2xl shadow-lg border-2 transition-all duration-300 hover:shadow-xl ${
                                         tierName === 'standard' 
                                             ? 'border-green-400 ring-2 ring-green-200' 
+                                            : tierName === 'premium'
+                                            ? 'border-emerald-500 ring-2 ring-emerald-200'
                                             : 'border-gray-200 hover:border-green-300'
                                     }`}
                                 >
                                     {tierName === 'standard' && (
                                         <div className="bg-gradient-to-r from-green-500 to-emerald-500 text-white text-center py-2 rounded-t-2xl">
                                             <span className="font-semibold">Most Popular</span>
+                                        </div>
+                                    )}
+                                    {tierName === 'premium' && (
+                                        <div className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white text-center py-2 rounded-t-2xl">
+                                            <span className="font-semibold">⭐ Premium Choice</span>
                                         </div>
                                     )}
                                     
@@ -398,6 +453,8 @@ export default function CreditsDashboard() {
                                             className={`w-full py-3 px-6 rounded-xl font-semibold text-lg transition-all duration-300 ${
                                                 tierName === 'standard'
                                                     ? 'bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white shadow-lg'
+                                                    : tierName === 'premium'
+                                                    ? 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white shadow-lg'
                                                     : 'bg-gray-900 hover:bg-gray-800 text-white'
                                             } disabled:opacity-50 disabled:cursor-not-allowed`}
                                         >
@@ -480,6 +537,61 @@ export default function CreditsDashboard() {
                         </div>
                     </div>
                 </div>
+
+                {/* Payment Setup Modal */}
+                {showPaymentModal && selectedTier && (
+                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                        <div className="bg-white rounded-2xl p-8 max-w-md w-full mx-4">
+                            <h3 className="text-2xl font-bold text-gray-900 mb-6">Setup Payment Account</h3>
+                            
+                            <div className="mb-6">
+                                <p className="text-gray-600 mb-4">
+                                    To purchase the {selectedTier.tierName} package for ${selectedTier.tier.price}, 
+                                    you need to set up a payment account first.
+                                </p>
+                                
+                                <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                                    <h4 className="font-semibold text-blue-900 mb-2">Package Details:</h4>
+                                    <ul className="text-sm text-blue-800 space-y-1">
+                                        <li>• {selectedTier.tier.credits} AI Credits</li>
+                                        <li>• {Math.floor(selectedTier.tier.credits / 2)} conversations</li>
+                                        <li>• No expiration date</li>
+                                        {selectedTier.tier.bonus && (
+                                            <li>• {selectedTier.tier.bonus}</li>
+                                        )}
+                                    </ul>
+                                </div>
+                            </div>
+                            
+                            <div className="flex space-x-4">
+                                <button
+                                    onClick={() => setShowPaymentModal(false)}
+                                    className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={async () => {
+                                        try {
+                                            const response = await paymentApi.createPaymentAccount(50.0);
+                                            if (response.status === 'success') {
+                                                setPaymentAccount(response.data);
+                                                setShowPaymentModal(false);
+                                                // Retry purchase
+                                                handlePurchase(selectedTier.tierName, selectedTier.tier);
+                                            }
+                                        } catch (error) {
+                                            console.error('Failed to create payment account:', error);
+                                        }
+                                    }}
+                                    className="flex-1 px-4 py-3 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-colors"
+                                >
+                                    Setup Account
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );

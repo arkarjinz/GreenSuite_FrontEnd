@@ -25,9 +25,9 @@ export default function RinImage({ size = 'md', className = "" }: RinImageProps)
     };
 
     return (
-        <div className={`${sizeClasses[size]} ${className}`}>
+        <div className={`${sizeClasses[size]} ${className} flex-shrink-0`}>
             <Image
-                src="/images/RIn.png"
+                src="/images/rin1.png"
                 alt="Rin Kazuki"
                 width={size === 'xl' ? 192 : size === 'lg' ? 96 : size === 'md' ? 64 : 32}
                 height={size === 'xl' ? 256 : size === 'lg' ? 96 : size === 'md' ? 64 : 32}
