@@ -22,6 +22,7 @@
     "postprocessing": "^6.37.7",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "recharts": "^3.1.2",
     "tailwind-merge": "^3.3.1",
     "three": "^0.179.1",
     "use-debounce": "^10.0.5"
