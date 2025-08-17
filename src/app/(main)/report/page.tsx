@@ -4,10 +4,12 @@ import ReportTable from '@/components/report/report';
 
 const ReportPage = () => {
   return (
-    <main className="p-6">
+    <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100">
+      <main className="max-w-[1800px] mx-auto p-6">
       <h1 className="text-2xl font-semibold mb-4">Reports</h1>
       <ReportTable />
     </main>
+    </div>
   );
 };
 

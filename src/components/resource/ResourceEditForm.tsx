@@ -217,7 +217,7 @@ const ResourceEditForm: React.FC = () => {
       
       // Show success message and redirect
       alert("Data updated successfully!");
-      router.push('/reports'); // or wherever you want to redirect
+      router.push(`/results/${formData.month}/${formData.year}?region=${formData.region}`); // or wherever you want to redirect
 
     } catch (error) {
       console.error("Update Error:", error);
