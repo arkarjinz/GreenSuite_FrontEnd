@@ -205,7 +205,7 @@ setResponseMessage("Goal analysis complete.");
   onChange={(e) => setYear(parseInt(e.target.value))}
   className="border-3 border-[#43a243] rounded-xl px-5 py-3"
 >
-  {getYearsRange(currentYear - 5, currentYear + 1).map((y) => (
+  {getYearsRange(currentYear - 5, currentYear ).map((y) => (
     <option key={y} value={y}>
       {y}
     </option>

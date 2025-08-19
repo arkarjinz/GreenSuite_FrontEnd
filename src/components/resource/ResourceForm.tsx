@@ -321,8 +321,8 @@ const handleSubmit = async () => {
     onChange={(e) => handleSelectChange("year", e.target.value)}
     className="rounded-[25px] border-4 border-[#43a243] outline-none px-5 py-3 text-lg w-full shadow-[inset_0_2px_4px_0_rgba(0,0,0,0.05)] hover:shadow-[inset_0_2px_8px_0_rgba(0,0,0,0.1)]"
   >
-    {Array.from({ length: 10 }, (_, i) => {
-      const yearOption = (new Date().getFullYear() - 5 + i).toString(); // show 5 years back and 4 years ahead
+    {Array.from({ length: new Date().getFullYear() - 2019 }, (_, i) => {
+      const yearOption = (2020+i).toString();//(new Date().getFullYear() - 5 + i).toString(); // show 5 years back and 4 years ahead
       return (
         <option key={yearOption} value={yearOption}>
           {yearOption}
@@ -375,6 +375,7 @@ const handleSubmit = async () => {
           <input
             type="number"
             min="0"
+            max="1000"
             value={formData.electricity}
             onChange={(e) => handleChange("electricity", e.target.value)}
             className="rounded-[25px] border-4 border-[#43a243] outline-none
@@ -441,6 +442,7 @@ const handleSubmit = async () => {
           <input
             type="number"
             min="0"
+            max="3000"
             value={formData.fuel}
             onChange={(e) => handleChange("fuel", e.target.value)}
             className="rounded-[25px] border-4 border-[#43a243] outline-none
