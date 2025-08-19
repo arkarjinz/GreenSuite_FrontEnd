@@ -8,6 +8,7 @@ import { Calendar,Globe2,Zap, Fuel, Droplet, Trash2 } from "lucide-react";
 import Button from "@/components/ui/Button"; 
 import { calculateFootprint } from '@/lib/api/carbon';
 import { getSubmittedResourceMonths } from "@/lib/api/carbon";
+import { Loading } from '@/components/ui/Loading';
 // Add these types to match your Java enums
 
 
@@ -55,7 +56,8 @@ const activityFieldMap: Record<ActivityType, keyof FormData> = {
   const ResourceForm: React.FC = () => {
     const router = useRouter();
     const currentYear = getCurrentYear();
-  const [formData, setFormData] = useState<FormData>({
+  const [isRedirecting, setIsRedirecting] = useState(false);
+    const [formData, setFormData] = useState<FormData>({
     electricity: "",
     water: "",
     fuel: "",
@@ -73,7 +75,8 @@ const activityFieldMap: Record<ActivityType, keyof FormData> = {
   // Add state for submitted months - similar to goalform.tsx
   const [submittedMonths, setSubmittedMonths] = useState<string[]>([]);
 // Fetch submitted months whenever the year changes - similar to goalform.tsx
-  useEffect(() => {
+  
+useEffect(() => {
     async function fetchSubmittedResourceMonths() {
       try {
         const months = await getSubmittedResourceMonths(parseInt(formData.year));
@@ -163,6 +166,7 @@ const handleUndo = () => {
 };//*///end of handlesubmit(old)
 const handleSubmit = async () => {
   setIsSubmitting(true);
+  setIsRedirecting(true); // Show loading state
 
   try {
      const numericMonth = getNumericMonth(formData.month); // convert month name to '07' etc.
@@ -222,6 +226,7 @@ const handleSubmit = async () => {
     router.push(`/results/${numericMonth}/${formData.year}?region=${formData.region}`);
   } catch (error) {
     console.error("API Error:", error);
+  setIsRedirecting(false);
   } finally {
     setIsSubmitting(false);
   }
@@ -229,6 +234,8 @@ const handleSubmit = async () => {
 
 
   return (
+    <>
+    {isRedirecting && <Loading />}
     <div className="max-w-[900px] mx-auto p-8 font-poppins">
       {/* Top bar */}
       <div className="flex justify-between items-center mb-8">
@@ -501,6 +508,7 @@ const handleSubmit = async () => {
   </Button>
 </div>
     </div>
+     </>
   );
 };
 

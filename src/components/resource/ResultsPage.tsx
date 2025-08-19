@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Button from '@/components/ui/Button';
 import { Lightbulb, Fuel, Droplet, Trash2, Download } from 'lucide-react';
 import { getChartData } from '@/lib/api/carbon'; // Import the updated function
-
+import { Loading } from '@/components/ui/Loading';
 const COLORS = ['#fe6600ff', '#0088FE', '#FFBB28', '#ae8051'];
 type ChartDataItem = {
   name: string;
