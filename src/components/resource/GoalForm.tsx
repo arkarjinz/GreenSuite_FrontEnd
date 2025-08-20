@@ -188,9 +188,9 @@ setResponseMessage("Goal analysis complete.");
 
 
   return (
-    <div className="min-h-screen pt-16">
+    <div className="max-w-4xl mx-auto p-8">
       
-    <div className=" flex flex-col items-center justify-center p-4 pb-8">
+    <div className=" flex flex-col items-center justify-center">
       <div className="max-w-4xl w-full space-y-8 ">
         {/* Header */}
         <div className="text-center">
