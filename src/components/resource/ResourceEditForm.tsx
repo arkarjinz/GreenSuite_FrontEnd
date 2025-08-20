@@ -269,10 +269,10 @@ const ResourceEditForm: React.FC = () => {
       </div>
 
       {/* Period Info Display */}
-      <div className="mb-6 bg-blue-50 border border-blue-200 rounded-lg px-6 py-4 text-blue-800">
+      <div className="mb-6 bg-green-50 border border-green-200 rounded-lg px-6 py-4 text-black-800">
         <p className="font-semibold text-center">
-          Editing data for: <span className="text-blue-900">{formData.month} {formData.year}</span> 
-          {" "}in <span className="text-blue-900">{formData.region.toUpperCase()}</span> region
+          Editing data for: <span className="text-black-900">{formData.month} {formData.year}</span> 
+          {" "}in <span className="text-black-900">{formData.region.toUpperCase()}</span> region
         </p>
       </div>
 

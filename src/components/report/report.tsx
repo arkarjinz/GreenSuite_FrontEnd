@@ -25,11 +25,14 @@ import {
   CheckCircle,
   XCircle
 } from 'lucide-react';
+import { Loading } from '@/components/ui/Loading'; // Import the Loading component
 
 const ReportTable = () => {
   const [data, setData] = useState<CarbonActivity[]>([]);
   const [loading, setLoading] = useState(true);
   const [goals, setGoals] = useState<CarbonGoal[]>([]);
+const [editingResource, setEditingResource] = useState(false); // Add this state
+  const [editingGoal, setEditingGoal] = useState(false); // Add this state
   const router = useRouter();
 
   useEffect(() => {
@@ -51,12 +54,14 @@ const ReportTable = () => {
 
   // Function to handle edit button click for resource data
   const handleEditResource = (month: string, year: string,region: string) => {
+    setEditingResource(true); 
     const compositeId = `${year}-${month}-${region}`;
     router.push(`/resource/edit/${compositeId}?month=${encodeURIComponent(month)}&year=${encodeURIComponent(year)}&region=${encodeURIComponent(region)}`);
   };
 
   // Function to handle edit button click for goals (if you have goal editing)
   const handleEditGoal = (goalId: string) => {
+    setEditingGoal(true); // ADD THIS LINE
     console.log('Editing goal with ID:', goalId);
     router.push(`/resource/goal/edit/${goalId}`);
   };
@@ -175,6 +180,21 @@ const sortGoalsByDate = (goals: CarbonGoal[]) => {
 
   return (
     <div className="max-w-full mx-auto p-4 md:p-8 font-poppins ">
+       {/* Show loading overlay when editing */}
+      {editingResource && (
+        <Loading 
+          title="Loading resource data..." 
+          message="Preparing your resource information for editing"
+        />
+      )}
+      
+      {editingGoal && (
+        <Loading 
+          title="Loading goal data..." 
+          message="Preparing your sustainability goals for editing"
+        />
+      )}
+      
       {/* Header */}
       <div className="text-center mb-8 b bg-transparent">
         <h1 className="text-2xl md:text-3xl font-bold text-gray-900 drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.2)] mb-2 uppercase">
@@ -192,7 +212,7 @@ const sortGoalsByDate = (goals: CarbonGoal[]) => {
           Resource Usage Activities
         </h2>
 
-        <div className="bg-white/70 rounded-[28px] p-4 md:p-8 shadow-lg overflow-hidden transition-transform transition-shadow duration-300 hover:-translate-y-1 hover:shadow-xl backdrop-blur-sm">
+        <div className="bg-white/70 rounded-[28px] p-4 md:p-8 shadow-lg overflow-hidden transition-transform transition-shadow duration-300 hover:-translate-y-1 hover:shadow-xl ">
           <div className="overflow-x-auto">
             <table className="w-full text-sm text-left text-gray-600">
               <thead className="text-xs text-gray-700 uppercase bg-gray-50 rounded-t-lg">
@@ -307,7 +327,7 @@ const sortGoalsByDate = (goals: CarbonGoal[]) => {
     {showDownloadButton && (
     <button
       onClick={() => downloadActivitiesCSV(activity.month, activity.year, activity.region)}
-      className="inline-flex items-center gap-1 bg-blue-600 text-white px-3 py-2 rounded-[20px] text-sm font-medium hover:bg-blue-700 transition-colors duration-200 shadow-md hover:shadow-lg"
+      className="inline-flex items-center gap-1 bg-green-900 text-white px-3 py-2 rounded-[20px] text-sm font-medium hover:bg-blue-700 transition-colors duration-200 shadow-md hover:shadow-lg"
       title={`Download ${activity.month} ${activity.year} data`}
     >
       <Download size={14} />
@@ -332,7 +352,7 @@ const sortGoalsByDate = (goals: CarbonGoal[]) => {
       {/* Carbon Goals Table */}
       <div className="mb-8">
         <h2 className="text-xl md:text-2xl font-semibold text-gray-900 mb-6 flex items-center gap-2">
-          <Target className="text-purple-600" size={28} />
+          <Target className="text-black-600" size={28} />
           Carbon Goals
         </h2>
 
@@ -459,7 +479,7 @@ const sortGoalsByDate = (goals: CarbonGoal[]) => {
                     <td className="px-4 py-4">
                       <button
                         onClick={() => handleEditGoal(goal.id.toString())}
-                        className="inline-flex items-center gap-1 bg-purple-600 text-white px-3 py-2 rounded-[20px] text-sm font-medium hover:bg-purple-700 transition-colors duration-200 shadow-md hover:shadow-lg"
+                        className="inline-flex items-center gap-1 bg-green-600 text-white px-3 py-2 rounded-[20px] text-sm font-medium hover:bg-purple-700 transition-colors duration-200 shadow-md hover:shadow-lg"
                       >
                         <Edit size={14} />
                         Edit Goal

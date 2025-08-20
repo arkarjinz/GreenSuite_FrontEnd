@@ -1,6 +1,6 @@
 "use client";
 import {useState, useEffect, JSX} from "react";
-import { Lightbulb, Fuel, Droplet, Trash2 } from "lucide-react";
+import { Lightbulb, Fuel, Droplet, Trash2,X } from "lucide-react";
 import Button from "@/components/ui/Button";
 import { checkGoals, saveGoal, GoalCheckRequest, GoalCheckResponse } from "@/lib/api/goal";
 import { fetchGoalById } from "@/lib/api/goalreport";
@@ -71,7 +71,7 @@ export default function GoalEditForm({ goalId, searchParams }: Props) {
   const [goalData, setGoalData] = useState<any>(null);
   const [responseMessage, setResponseMessage] = useState<string | null>(null);
   const [resultData, setResultData] = useState<GoalCheckResponse | null>(null);
-
+const [showResultModal, setShowResultModal] = useState(false); // Modal state
   // Load existing goal data
   useEffect(() => {
     const loadGoalData = async () => {
@@ -134,7 +134,8 @@ export default function GoalEditForm({ goalId, searchParams }: Props) {
       
       // Update original values to reflect the new saved state
       setOriginalValues({...values});
-
+// Show the result modal
+      setShowResultModal(true);
     } catch (error) {
       console.error("Error during goal update:", error);
       setResponseMessage("An error occurred while updating your goal.");
@@ -144,7 +145,9 @@ export default function GoalEditForm({ goalId, searchParams }: Props) {
   const handleCancel = () => {
     router.push('/report'); // Navigate back to reports page
   };
-
+ const closeModal = () => {
+    setShowResultModal(false);
+  };
   if (loading) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-4">
@@ -246,9 +249,18 @@ export default function GoalEditForm({ goalId, searchParams }: Props) {
         )}
 
         {/* Goal Summary Display */}
-        {resultData && (
-          <div className="mt-6 bg-white border-3 border-[#43a243] rounded-xl shadow-sm p-6 space-y-4">
+        {showResultModal&&resultData && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-xl shadow-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="p-6">
+                <div className="flex justify-between items-center mb-4"></div>
+            
+            
+            
+            
             <h3 className="text-2xl font-bold text-black-800 drop-shadow-[0_2px_1px_rgba(0,0,0,0.1)]">Updated Goal Summary</h3>
+            
+            
             <p className="text-lg font-semibold text-gray-700 drop-shadow-sm leading-relaxed">
               {resultData.message}
             </p>
@@ -256,7 +268,7 @@ export default function GoalEditForm({ goalId, searchParams }: Props) {
             <p className="text-md font-medium text-gray-700 mb-4">
               {buildSummaryMessage(resultData, values)}
             </p>
-            
+             <div className="space-y-4">
             {Object.entries(resultData.results).map(([category, result]) => {
               const isGoalMet = result.goalMet;
               const userSelectedValue = values[category as GoalKey];
@@ -293,6 +305,17 @@ export default function GoalEditForm({ goalId, searchParams }: Props) {
                 </div>
               );
             })}
+          </div>
+        <div className="mt-6 flex justify-end">
+                  <Button
+                    onClick={closeModal}
+                    className="px-6 py-2 bg-green-600 text-white hover:bg-green-700"
+                  >
+                    Close
+                  </Button>
+                </div>
+              </div>
+            </div>
           </div>
         )}
       </div>

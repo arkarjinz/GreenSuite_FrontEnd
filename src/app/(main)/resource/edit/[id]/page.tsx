@@ -33,7 +33,7 @@ function EditResourceContent() {
   // Validate we have the required parameters
   if (!month || !year || !region) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100">
+      <div className="min-h-screen bg-gradient-to-t from-green-600 to-zinc-50"> 
         <div className="max-w-[900px] mx-auto p-8 font-poppins">
           <div className="flex justify-center items-center min-h-[400px]">
             <div className="text-center">
@@ -52,7 +52,7 @@ function EditResourceContent() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100">
+    <div className="min-h-screen bg-gradient-to-t from-green-600 to-zinc-50"> 
       <ResourceEditForm />
     </div>
   );
@@ -61,7 +61,7 @@ function EditResourceContent() {
 export default function EditResourcePage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100">
+       <div className="min-h-screen bg-gradient-to-t from-green-600 to-zinc-50">
         <div className="max-w-[900px] mx-auto p-8 font-poppins">
           <div className="flex justify-center items-center min-h-[400px]">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>

@@ -1,6 +1,6 @@
 "use client";
-import {useState,  JSX} from "react";
-import { Lightbulb, Fuel, Droplet, Trash2 } from "lucide-react";
+import {useState,  JSX,useRef} from "react";
+import { Lightbulb, Fuel, Droplet, Trash2 ,X} from "lucide-react";
 import Button from "@/components/ui/Button";
 import { checkGoals, saveGoal ,GoalCheckRequest,GoalCheckResponse} from "@/lib/api/goal";
 import { useEffect } from "react";
@@ -28,15 +28,17 @@ function getYearsRange(startYear: number, endYear: number) {
 }
 export default function SustainabilityGoals() {
  const currentYear = getCurrentYear();
-
+// Add this line - the useRef declaration
+  const resultRef = useRef<HTMLDivElement>(null); // ← Add this line
   // Add these state variables
   const [year, setYear] = useState(currentYear);
   //const [month, setMonth] = useState(new Date().getMonth() + 1); // month 1-12
   const [month, setMonth] = useState<string>(String(new Date().getMonth() + 1).padStart(2, "0")); // "01" to "12"
   const [submittedMonths, setSubmittedMonths] = useState<string[]>([]);
-
+const [showResultModal, setShowResultModal] = useState(false); // New state for modal visibility
   // Fetch submitted months whenever the year changes
   useEffect(() => {
+     //document.documentElement.style.scrollPaddingTop = '6rem';
     async function fetchSubmitted() {
       try {
         const months = await getSubmittedGoalMonths(year);
@@ -57,6 +59,8 @@ export default function SustainabilityGoals() {
       }
     }
     fetchSubmitted();
+    
+  
   }, [year]);
   
   const [values, setValues] = useState<Record<GoalKey, number>>({
@@ -157,6 +161,7 @@ console.log(`🔍 Checking ${category}:`, {
     setResponseMessage(`Error: ${error instanceof Error ? error.message : String(error)}`);
   }
 };*/
+  
 const handleSubmit = async () => {
   try {
     //const selectedMonth = `${year}-${String(month).padStart(2, "0")}`;
@@ -177,21 +182,26 @@ const handleSubmit = async () => {
     await saveGoal(request); // save after checking
     setResponseMessage("Goal analysis complete.");
 
-
+setShowResultModal(true); // Show the modal instead of scrolling
     
 setResponseMessage("Goal analysis complete.");
   } catch (error) {
     console.error("Error during goal check or save:", error);
     setResponseMessage("An error occurred while processing your goal.");
   }
+  
+  
 };
-
+ const closeModal = () => {
+    setShowResultModal(false);
+  };
 
   return (
-    <div className="max-w-4xl mx-auto p-8">
+    
+    <div className="relative max-w-4xl mx-auto p-8 pb-32 pt-24">
       
-    <div className=" flex flex-col items-center justify-center">
-      <div className="max-w-4xl w-full space-y-8 ">
+    
+      <div className=" w-full space-y-8 ">
         {/* Header */}
         <div className="text-center">
           {/*<h1 className="text-2xl font-bold text-gray-900 mb-2">GREENSUITE</h1>*/}
@@ -296,25 +306,44 @@ console.log("[DEBUG] Disabled months from backend:", submittedMonths);
   <p className="mt-4 text-center text-sm text-green-600">{responseMessage}</p>
 )}
         </div>
+        </div>
         {/* Goal Summary Display */}
         
-{resultData && (
+{/*resultData && (
   
-  <div className="mt-6 bg-white border-3 border-[#43a243] rounded-xl shadow-sm p-6 space-y-4 mb-8">
-    
+  <div ref={resultRef} // Added ref for scrolling
+  className="mt-6 bg-white border-3 border-[#43a243] rounded-xl shadow-sm p-6 space-y-4 mb-8" style={{scrollMarginTop:'6rem'}}>
     <h3 className="text-2xl font-bold text-black-800 drop-shadow-[0_2px_1px_rgba(0,0,0,0.1)]">Goal Summary</h3>
-{/* Show exact backend message here */}
+
     <p className="text-lg font-semibold text-gray-700 drop-shadow-sm leading-relaxed">
       {resultData.message}
-    </p>
-
-
+    </p>*/}
+{/* Result Modal */}
+      {showResultModal && resultData && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-2xl font-bold text-black-800 drop-shadow-[0_2px_1px_rgba(0,0,0,0.1)]">
+                  Goal Summary
+                </h3>
+                <button 
+                  onClick={closeModal}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  <X size={24} />
+                </button>
+              </div>
+ <p className="text-lg font-semibold text-gray-700 drop-shadow-sm leading-relaxed mb-4">
+                {resultData.message}
+              </p>
 {/* Add the summary message here */}
     <p className="text-md font-medium text-gray-700 mb-4">
       {/*buildSummaryMessage(resultData.results)*/}
       
       {buildSummaryMessage(resultData)}
     </p>
+     <div className="space-y-4">
     {Object.entries(resultData.results).map(([category, result]) => {
       
     const isGoalMet = result.goalMet;
@@ -364,12 +393,19 @@ console.log(`🖼️ Rendering result:`, {
          
   );
 })}
-
-    
-  </div>
-)}
 </div>
-      </div>
+<div className="mt-6 flex justify-end">
+                <Button
+                  onClick={closeModal}
+                  className="px-6 py-2 bg-green-600 text-white hover:bg-green-700"
+                >
+                  Close
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
