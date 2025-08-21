@@ -116,12 +116,48 @@ const ResourceEditForm: React.FC = () => {
 
     loadExistingData();
   }, [monthParam, yearParam, regionParam, router]);
+useEffect(() => {
+  // Define correct units for each fuel type
+  const correctUnits = {
+    gasoline: "LITERS",
+    diesel: "LITERS", 
+    naturalGas: "CUBIC_METERS"
+  };
 
+  const currentFuelType = formData.fuelType;
+  const currentUnit = formData.unit;
+  const expectedUnit = correctUnits[currentFuelType];
+
+  // Only show alert if both values are set and there's a mismatch
+  if (currentFuelType && currentUnit && currentUnit !== expectedUnit) {
+    const fuelTypeDisplay = currentFuelType === 'naturalGas' ? 'Natural Gas' : 
+                           currentFuelType.charAt(0).toUpperCase() + currentFuelType.slice(1);
+    const unitDisplay = expectedUnit === 'CUBIC_METERS' ? 'Cubic Meters' : 'Liters';
+    
+    alert(`Warning: ${fuelTypeDisplay} should be measured in ${unitDisplay}. Please select the correct unit.`);
+    
+    // Auto-correct the unit
+    setFormData(prev => ({ ...prev, unit: expectedUnit as VolumeUnit }));
+  }
+}, [formData.fuelType, formData.unit]);
   const handleChange = (field: keyof FormData, value: string) => {
+    const limits = {
+    electricity: 3000,
+    water: 3000,
+    fuel: 3000,
+    waste: 3000
+  };
+
+  // Check if this field has a limit and if value exceeds it
+  if (limits[field as keyof typeof limits] && Number(value) > limits[field as keyof typeof limits]) {
+    alert(`${field.charAt(0).toUpperCase() + field.slice(1)} cannot exceed ${limits[field as keyof typeof limits]} per month.`);
+    return; // Don't update the state
+  }
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
   const handleSelectChange = (field: keyof FormData, value: string) => {
+    
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
@@ -320,7 +356,7 @@ const ResourceEditForm: React.FC = () => {
           <input
             type="number"
             min="0"
-            max="3000"
+            max="2000"
             value={formData.electricity}
             onChange={(e) => handleChange("electricity", e.target.value)}
             className="rounded-[25px] border-4 border-[#43a243] outline-none
@@ -344,7 +380,7 @@ const ResourceEditForm: React.FC = () => {
           <input
             type="number"
             min="0"
-            max="3000"
+            max="2000"
             value={formData.water}
             onChange={(e) => handleChange("water", e.target.value)}
             className="rounded-[25px] border-4 border-[#43a243] outline-none
@@ -386,7 +422,7 @@ const ResourceEditForm: React.FC = () => {
           <input
             type="number"
             min="0"
-            max="3000"
+            max="2000"
             value={formData.fuel}
             onChange={(e) => handleChange("fuel", e.target.value)}
             className="rounded-[25px] border-4 border-[#43a243] outline-none
@@ -420,7 +456,7 @@ const ResourceEditForm: React.FC = () => {
           <input
             type="number"
             min="0"
-            max="3000"
+            max="2000"
             value={formData.waste}
             onChange={(e) => handleChange("waste", e.target.value)}
             className="rounded-[25px] border-4 border-[#43a243] outline-none
