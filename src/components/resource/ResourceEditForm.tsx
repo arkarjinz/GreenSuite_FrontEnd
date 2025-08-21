@@ -320,6 +320,7 @@ const ResourceEditForm: React.FC = () => {
           <input
             type="number"
             min="0"
+            max="3000"
             value={formData.electricity}
             onChange={(e) => handleChange("electricity", e.target.value)}
             className="rounded-[25px] border-4 border-[#43a243] outline-none
@@ -343,6 +344,7 @@ const ResourceEditForm: React.FC = () => {
           <input
             type="number"
             min="0"
+            max="3000"
             value={formData.water}
             onChange={(e) => handleChange("water", e.target.value)}
             className="rounded-[25px] border-4 border-[#43a243] outline-none
@@ -384,6 +386,7 @@ const ResourceEditForm: React.FC = () => {
           <input
             type="number"
             min="0"
+            max="3000"
             value={formData.fuel}
             onChange={(e) => handleChange("fuel", e.target.value)}
             className="rounded-[25px] border-4 border-[#43a243] outline-none
@@ -417,6 +420,7 @@ const ResourceEditForm: React.FC = () => {
           <input
             type="number"
             min="0"
+            max="3000"
             value={formData.waste}
             onChange={(e) => handleChange("waste", e.target.value)}
             className="rounded-[25px] border-4 border-[#43a243] outline-none

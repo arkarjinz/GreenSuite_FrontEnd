@@ -375,7 +375,7 @@ const handleSubmit = async () => {
           <input
             type="number"
             min="0"
-            max="1000"
+            max="3000"
             value={formData.electricity}
             onChange={(e) => handleChange("electricity", e.target.value)}
             className="rounded-[25px] border-4 border-[#43a243] outline-none
@@ -399,6 +399,7 @@ const handleSubmit = async () => {
           <input
             type="number"
             min="0"
+            max="3000"
             value={formData.water}
             onChange={(e) => handleChange("water", e.target.value)}
             className="rounded-[25px] border-4 border-[#43a243] outline-none
@@ -476,6 +477,7 @@ const handleSubmit = async () => {
           <input
             type="number"
             min="0"
+            max="3000"
             value={formData.waste}
             onChange={(e) => handleChange("waste", e.target.value)}
             className="rounded-[25px] border-4 border-[#43a243] outline-none
