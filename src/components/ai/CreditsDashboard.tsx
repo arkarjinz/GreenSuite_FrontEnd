@@ -40,6 +40,7 @@ export default function CreditsDashboard() {
     const [isClient, setIsClient] = useState(false);
     const [showPaymentModal, setShowPaymentModal] = useState(false);
     const [selectedTier, setSelectedTier] = useState<any>(null);
+    const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
     // Ensure client-side rendering
     useEffect(() => {
@@ -62,35 +63,94 @@ export default function CreditsDashboard() {
                 paymentApi.getCreditPricing()
             ]);
 
-            if (statsResponse.status === 'success') {
+            if (statsResponse.success) {
                 setCreditStats(statsResponse.data);
-            }
-
-            if (pricingResponse.status === 'success') {
-                setPricingInfo(pricingResponse.data);
-            }
-
-            // Create a new payment account each time (backend doesn't link userId properly)
-            try {
-                const createResponse = await paymentApi.createPaymentAccount(50.0);
-                if (createResponse.status === 'success') {
-                    setPaymentAccount(createResponse.data);
-                }
-            } catch (createError) {
-                console.log('Failed to create payment account, using demo data');
-                // Create demo account for display
-                setPaymentAccount({
-                    accountNumber: 'GreenSuite' + Math.floor(Math.random() * 90000) + 10000,
-                    userName: user?.firstName + ' ' + user?.lastName || 'Demo User',
-                    balance: 50.0,
-                    creditPoints: 50,
-                    status: 'ACTIVE',
-                    createdDate: new Date().toISOString()
+            } else {
+                // Set default credit stats if API fails
+                setCreditStats({
+                    currentCredits: 50,
+                    chatCost: 2,
+                    canChat: true,
+                    possibleChats: 25,
+                    isLowOnCredits: false
                 });
             }
+
+            if (pricingResponse.success && pricingResponse.data) {
+                // The packages are in pricingResponse.data.packages
+                const packages = pricingResponse.data.packages || [];
+                setPricingInfo({ packages });
+            } else {
+                // Set default packages if API fails
+                setPricingInfo({
+                    packages: [
+                        { id: 'basic', credits: 50, price: 9.99, description: 'Basic Package' },
+                        { id: 'standard', credits: 100, price: 18.99, description: 'Standard Package' },
+                        { id: 'premium', credits: 250, price: 44.99, description: 'Premium Package' }
+                    ]
+                });
+            }
+
+            // Load payment account or create one if none exists
+            try {
+                const accountResponse = await paymentApi.getUserPaymentAccount();
+                if (accountResponse.success) {
+                    setPaymentAccount(accountResponse.data.account);
+                } else if (accountResponse.error === 'NO_ACCOUNT_FOUND') {
+                    console.log('No payment account found, creating new one...');
+                    
+                    const createResponse = await paymentApi.createPaymentAccount({
+                        accountName: `${user?.firstName || 'User'} Primary Account`,
+                        currency: 'USD'
+                    });
+                    
+                    if (createResponse.success) {
+                        setPaymentAccount(createResponse.data.account);
+                        console.log('Successfully created payment account');
+                    } else if (createResponse.error === 'ACCOUNT_EXISTS') {
+                        console.log('Account already exists, using existing one.');
+                    } else if (createResponse.error === 'USER_NOT_APPROVED') {
+                        console.log('User not approved for payment features');
+                        setPaymentAccount(null);
+                    }
+                } else if (accountResponse.error === 'USER_NOT_APPROVED') {
+                    console.log('User not approved for payment features');
+                    setPaymentAccount(null);
+                }
+            } catch (accountError: any) {
+                console.error('Error handling payment account:', accountError);
+                
+                // Set demo account for display purposes when user can't access payment features
+                if (accountError.message && accountError.message.includes('approval')) {
+                    console.log('Setting demo account due to approval requirement');
+                    setPaymentAccount({
+                        id: 'demo',
+                        accountNumber: 'DEMO-ACCOUNT',
+                        balance: 0,
+                        currency: 'USD',
+                        status: 'PENDING_APPROVAL',
+                        verificationLevel: 'PENDING',
+                        dailyLimit: 0,
+                        monthlyLimit: 0
+                    });
+                } else {
+                    // Set demo account for other errors
+                    setPaymentAccount({
+                        id: 'demo',
+                        accountNumber: 'DEMO-ACCOUNT',
+                        balance: 25.00,
+                        currency: 'USD',
+                        status: 'ACTIVE',
+                        verificationLevel: 'BASIC',
+                        dailyLimit: 1000,
+                        monthlyLimit: 5000
+                    });
+                }
+            }
+
         } catch (error) {
             console.error('Error loading credit data:', error);
-            // Set default credit stats if API fails
+            // Set defaults on error
             setCreditStats({
                 currentCredits: 50,
                 chatCost: 2,
@@ -98,32 +158,12 @@ export default function CreditsDashboard() {
                 possibleChats: 25,
                 isLowOnCredits: false
             });
-            
-            // Set default pricing info
             setPricingInfo({
-                chatCost: 2,
-                pricingTiers: {
-                    basic: {
-                        credits: 50,
-                        price: 4.99,
-                        currency: "USD",
-                        description: "Perfect for casual users"
-                    },
-                    standard: {
-                        credits: 150,
-                        price: 12.99,
-                        currency: "USD",
-                        description: "Great for regular users",
-                        bonus: "15% bonus credits"
-                    },
-                    premium: {
-                        credits: 350,
-                        price: 24.99,
-                        currency: "USD",
-                        description: "Best value for power users",
-                        bonus: "25% bonus credits"
-                    }
-                }
+                packages: [
+                    { id: 'basic', credits: 50, price: 9.99, description: 'Basic Package' },
+                    { id: 'standard', credits: 100, price: 18.99, description: 'Standard Package' },
+                    { id: 'premium', credits: 250, price: 44.99, description: 'Premium Package' }
+                ]
             });
         } finally {
             setIsLoading(false);
@@ -151,18 +191,16 @@ export default function CreditsDashboard() {
 
         try {
             setIsPurchasing(true);
+            setErrorMessage(null); // Clear previous errors
             
             const purchaseRequest = {
-                accountNumber: paymentAccount.accountNumber,
-                paymentMethod: 'CARD',
-                creditPackage: tierName.toUpperCase(),
-                creditAmount: tier.credits,
+                creditPackageId: tierName.toUpperCase(),
                 amount: tier.price
             };
             
             const response = await paymentApi.purchaseCredits(purchaseRequest);
             
-            if (response.status === 'success') {
+            if (response.success && response.data) {
                 setPurchaseSuccess(true);
                 setTimeout(() => setPurchaseSuccess(false), 5000);
                 
@@ -174,10 +212,11 @@ export default function CreditsDashboard() {
                     updateUser({
                         ...user,
                         aiCredits: (user.aiCredits || 0) + tier.credits,
-                        canChat: true,
-                        isLowOnCredits: false
+                        canChat: true
                     });
                 }
+            } else {
+                setErrorMessage(response.message || 'Failed to purchase credits');
             }
         } catch (error: any) {
             console.error('Purchase failed:', error);
@@ -383,25 +422,25 @@ export default function CreditsDashboard() {
                         Purchase AI Credits
                     </h2>
                     
-                    {pricingInfo && pricingInfo.pricingTiers && (
+                    {pricingInfo && pricingInfo.packages && (
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                            {Object.entries(pricingInfo.pricingTiers).map(([tierName, tier]: [string, any]) => (
+                            {pricingInfo.packages.map((tier: any) => (
                                 <div 
-                                    key={tierName}
+                                    key={tier.id}
                                     className={`bg-white rounded-2xl shadow-lg border-2 transition-all duration-300 hover:shadow-xl ${
-                                        tierName === 'standard' 
+                                        tier.id === 'standard' 
                                             ? 'border-green-400 ring-2 ring-green-200' 
-                                            : tierName === 'premium'
+                                            : tier.id === 'premium'
                                             ? 'border-emerald-500 ring-2 ring-emerald-200'
                                             : 'border-gray-200 hover:border-green-300'
                                     }`}
                                 >
-                                    {tierName === 'standard' && (
+                                    {tier.id === 'standard' && (
                                         <div className="bg-gradient-to-r from-green-500 to-emerald-500 text-white text-center py-2 rounded-t-2xl">
                                             <span className="font-semibold">Most Popular</span>
                                         </div>
                                     )}
-                                    {tierName === 'premium' && (
+                                    {tier.id === 'premium' && (
                                         <div className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white text-center py-2 rounded-t-2xl">
                                             <span className="font-semibold">⭐ Premium Choice</span>
                                         </div>
@@ -410,7 +449,7 @@ export default function CreditsDashboard() {
                                     <div className="p-8">
                                         <div className="text-center mb-6">
                                             <h3 className="text-2xl font-bold text-gray-900 capitalize mb-2">
-                                                {tierName}
+                                                {tier.id}
                                             </h3>
                                             <p className="text-gray-600 text-sm mb-4">{tier.description}</p>
                                             
@@ -448,12 +487,12 @@ export default function CreditsDashboard() {
                                         </div>
 
                                         <button
-                                            onClick={() => handlePurchase(tierName, tier)}
+                                            onClick={() => handlePurchase(tier.id, tier)}
                                             disabled={isPurchasing}
                                             className={`w-full py-3 px-6 rounded-xl font-semibold text-lg transition-all duration-300 ${
-                                                tierName === 'standard'
+                                                tier.id === 'standard'
                                                     ? 'bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white shadow-lg'
-                                                    : tierName === 'premium'
+                                                    : tier.id === 'premium'
                                                     ? 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white shadow-lg'
                                                     : 'bg-gray-900 hover:bg-gray-800 text-white'
                                             } disabled:opacity-50 disabled:cursor-not-allowed`}
@@ -546,18 +585,18 @@ export default function CreditsDashboard() {
                             
                             <div className="mb-6">
                                 <p className="text-gray-600 mb-4">
-                                    To purchase the {selectedTier.tierName} package for ${selectedTier.tier.price}, 
+                                    To purchase the {selectedTier.id} package for ${selectedTier.price}, 
                                     you need to set up a payment account first.
                                 </p>
                                 
                                 <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
                                     <h4 className="font-semibold text-blue-900 mb-2">Package Details:</h4>
                                     <ul className="text-sm text-blue-800 space-y-1">
-                                        <li>• {selectedTier.tier.credits} AI Credits</li>
-                                        <li>• {Math.floor(selectedTier.tier.credits / 2)} conversations</li>
+                                        <li>• {selectedTier.credits} AI Credits</li>
+                                        <li>• {Math.floor(selectedTier.credits / 2)} conversations</li>
                                         <li>• No expiration date</li>
-                                        {selectedTier.tier.bonus && (
-                                            <li>• {selectedTier.tier.bonus}</li>
+                                        {selectedTier.bonus && (
+                                            <li>• {selectedTier.bonus}</li>
                                         )}
                                     </ul>
                                 </div>
@@ -573,12 +612,15 @@ export default function CreditsDashboard() {
                                 <button
                                     onClick={async () => {
                                         try {
-                                            const response = await paymentApi.createPaymentAccount(50.0);
-                                            if (response.status === 'success') {
-                                                setPaymentAccount(response.data);
+                                            const response = await paymentApi.createPaymentAccount({
+                                                accountName: `${user?.firstName || 'User'} Primary Account`,
+                                                currency: 'USD'
+                                            });
+                                            if (response.success) {
+                                                setPaymentAccount(response.data.account);
                                                 setShowPaymentModal(false);
                                                 // Retry purchase
-                                                handlePurchase(selectedTier.tierName, selectedTier.tier);
+                                                handlePurchase(selectedTier.id, selectedTier);
                                             }
                                         } catch (error) {
                                             console.error('Failed to create payment account:', error);

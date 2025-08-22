@@ -12,6 +12,12 @@ export default function PendingPage() {
     const { user, isLoading, logout } = useAuth();
     const router = useRouter();
     const [companyName, setCompanyName] = useState<string | null>(null);
+    const [isClient, setIsClient] = useState(false);
+
+    // Ensure client-side rendering to prevent hydration issues
+    useEffect(() => {
+        setIsClient(true);
+    }, []);
 
     // Fetch company name when user is available
     useEffect(() => {
@@ -29,80 +35,89 @@ export default function PendingPage() {
         }
     }, [user]);
 
-    // Redirect if user is not pending
-    useEffect(() => {
-        if (!isLoading && user && user.approvalStatus !== 'PENDING') {
+    // Don't render anything until client-side hydration is complete
+    if (!isClient || isLoading) {
+        return (
+            <div className="min-h-screen bg-white flex items-center justify-center">
+                <LoadingSpinner />
+            </div>
+        );
+    }
+
+    // If user is not pending, redirect to dashboard
+    if (user && user.approvalStatus !== 'PENDING') {
             router.push('/dashboard');
-        }
-    }, [user, isLoading, router]);
+        return (
+            <div className="min-h-screen bg-white flex items-center justify-center">
+                <LoadingSpinner />
+            </div>
+        );
+    }
 
-    // Helper function to determine status severity
-    const getStatusSeverity = () => {
-        if (user?.warning) return 'critical';
-        if ((user?.rejectionCount ?? 0) > 0) return 'warning';
-        return 'info';
-    };
-
-    const severity = getStatusSeverity();
+    // If no user, show loading
+    if (!user) {
+    return (
+            <div className="min-h-screen bg-white flex items-center justify-center">
+                <LoadingSpinner />
+            </div>
+        );
+    }
 
     return (
-        <>
-            {isLoading ? (
-                <LoadingSpinner />
-            ) : user && user.approvalStatus === 'PENDING' ? (
-                <div className="min-h-screen bg-gradient-to-br from-yellow-50 via-orange-50 to-red-50 flex items-center justify-center p-4">
-                    <div className="max-w-md w-full">
-                        {/* Status Card */}
-                        <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-200">
+        <div className="min-h-screen bg-white relative">
+            {/* Subtle green background shapes */}
+            <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                <div className="absolute top-20 left-10 w-32 h-32 bg-green-100/30 rounded-full blur-3xl"></div>
+                <div className="absolute bottom-20 right-10 w-24 h-24 bg-emerald-100/40 rounded-full blur-2xl"></div>
+                <div className="absolute top-1/2 left-1/4 w-16 h-16 bg-green-200/20 rounded-full blur-xl"></div>
+                <div className="absolute top-1/3 right-1/3 w-8 h-8 bg-emerald-300/30 rounded-full blur-lg"></div>
+                <div className="absolute bottom-1/3 left-1/2 w-12 h-12 bg-green-100/25 rounded-full blur-2xl"></div>
+            </div>
+
+            {/* Full page content */}
+            <div className="relative z-10 min-h-screen flex flex-col justify-center items-center p-4 md:p-8 animate-fade-in">
+                {/* Status Card - Full width on mobile, centered on desktop */}
+                <div className="w-full max-w-2xl bg-white rounded-2xl shadow-lg border border-gray-100 p-4 md:p-6 lg:p-8 animate-slide-up">
                             {/* Header with status icon */}
                             <div className="text-center mb-6">
-                                <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg ${
-                                    severity === 'critical' ? 'bg-gradient-to-br from-red-500 to-orange-500' :
-                                    severity === 'warning' ? 'bg-gradient-to-br from-yellow-500 to-orange-500' :
-                                    'bg-gradient-to-br from-blue-500 to-indigo-500'
-                                }`}>
+                        <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
                                     <ClockIcon className="w-8 h-8 text-white" />
                                 </div>
-                                <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                        <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">
                                     Account Pending Approval
                                 </h1>
-                                <p className="text-gray-600">
+                        <p className="text-sm md:text-base text-gray-600">
                                     Waiting for company administrator approval
                                 </p>
                             </div>
 
                             {/* Main Status Message */}
                             <div className="mb-6">
-                                <div className={`p-4 rounded-xl border flex items-start space-x-3 ${
-                                    severity === 'critical' ? 'bg-red-50 border-red-200' :
-                                    severity === 'warning' ? 'bg-yellow-50 border-yellow-200' :
-                                    'bg-blue-50 border-blue-200'
-                                }`}>
-                                    {severity === 'critical' ? (
-                                        <ExclamationTriangleIcon className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" />
-                                    ) : severity === 'warning' ? (
-                                        <ExclamationTriangleIcon className="w-5 h-5 text-yellow-500 mt-0.5 flex-shrink-0" />
-                                    ) : (
+                        <div className="p-4 rounded-lg border border-blue-200 bg-blue-50 flex items-start space-x-3">
                                         <InformationCircleIcon className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" />
-                                    )}
                                     <div className="flex-1">
-                                        <h3 className={`font-medium mb-1 ${
-                                            severity === 'critical' ? 'text-red-800' :
-                                            severity === 'warning' ? 'text-yellow-800' :
-                                            'text-blue-800'
-                                        }`}>
+                                <h3 className="text-base font-semibold text-blue-800 mb-1">
                                             {user.warning ? 'Critical Warning' :
                                              (user.rejectionCount ?? 0) > 0 ? 'Reapplication Pending' :
                                              'Initial Application Pending'}
                                         </h3>
-                                        <p className={`text-sm ${
-                                            severity === 'critical' ? 'text-red-600' :
-                                            severity === 'warning' ? 'text-yellow-600' :
-                                            'text-blue-600'
-                                        }`}>
+                                <p className="text-sm text-blue-600">
                                             {user.warning || (
                                                 companyName
-                                                    ? `Your account is waiting for approval from the administrator at ${companyName}.`
+                                            ? (
+                                                <>
+                                                    Your account is waiting for approval from the administrator at{' '}
+                                                    <button 
+                                                        className="text-blue-700 underline cursor-pointer hover:text-blue-800 transition-colors font-medium"
+                                                        onClick={() => {
+                                                            // You can add company details modal or navigation here
+                                                            console.log('Company clicked:', companyName);
+                                                        }}
+                                                    >
+                                                        {companyName}
+                                                    </button>.
+                                                </>
+                                            )
                                                     : "Your account is waiting for approval from your company administrator."
                                             )}
                                         </p>
@@ -112,7 +127,7 @@ export default function PendingPage() {
 
                             {/* Rejection History Display */}
                             {(user.rejectionCount ?? 0) > 0 && (
-                                <div className="mb-6 p-4 bg-gray-50 border border-gray-200 rounded-xl">
+                        <div className="mb-6 p-4 bg-gray-50 border border-gray-200 rounded-lg">
                                     <h3 className="text-gray-800 font-medium mb-3 flex items-center">
                                         <UserGroupIcon className="w-5 h-5 mr-2" />
                                         Application History
@@ -140,7 +155,7 @@ export default function PendingPage() {
 
                             {/* Critical Warning for Ban Risk */}
                             {user.warning && (
-                                <div className="mb-6 p-4 bg-red-50 border-2 border-red-200 rounded-xl">
+                        <div className="mb-6 p-4 bg-red-50 border-2 border-red-200 rounded-lg">
                                     <div className="flex items-start space-x-3">
                                         <ExclamationTriangleIcon className="w-6 h-6 text-red-500 mt-0.5 flex-shrink-0" />
                                         <div>
@@ -155,34 +170,32 @@ export default function PendingPage() {
                             )}
 
                             {/* Status Information */}
-                            <div className="mb-6 space-y-3">
-                                <div className="text-sm text-gray-600">
+                    <div className="mb-6">
+                        <p className="text-sm text-gray-600">
                                     You'll be notified via email once your account has been reviewed.
-                                </div>
+                        </p>
                                 {(user.rejectionCount ?? 0) > 0 && (
-                                    <div className="text-sm text-gray-600">
+                            <p className="text-sm text-gray-600 mt-2">
                                         <strong>Note:</strong> This is a reapplication after previous rejection(s). 
                                         Please ensure you meet all company requirements.
-                                    </div>
+                            </p>
                                 )}
                             </div>
 
                             {/* Action Buttons */}
                             <div className="flex flex-col gap-3">
-                                <Button
-                                    variant="primary"
+                        <button
                                     onClick={() => logout()}
-                                    className="w-full"
+                            className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] shadow-md hover:shadow-lg"
                                 >
                                     Sign Out
-                                </Button>
-                                <Button
-                                    variant="outline"
+                        </button>
+                        <button
                                     onClick={() => router.refresh()}
-                                    className="w-full"
+                            className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-3 px-4 rounded-lg border border-gray-300 transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98]"
                                 >
                                     Check Approval Status
-                                </Button>
+                        </button>
                             </div>
 
                             {/* Contact Information */}
@@ -194,10 +207,6 @@ export default function PendingPage() {
                         </div>
                     </div>
                 </div>
-            ) : (
-                <LoadingSpinner />
-            )}
-        </>
     );
 }
 

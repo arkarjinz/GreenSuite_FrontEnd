@@ -10,9 +10,192 @@ console.log('🔧 API Configuration:', {
 
 // Auth API
 export const authApi = {
+    // Test if backend is a Spring Boot application
+    testSpringBootBackend: async (): Promise<{ isSpringBoot: boolean; details: any }> => {
+        try {
+            console.log('🔍 Testing if backend is Spring Boot...');
+            const response = await axiosInstance.get('/');
+            
+            const headers = response.headers;
+            const isSpringBoot = headers['x-application-context'] || 
+                                headers['server']?.includes('Tomcat') ||
+                                headers['server']?.includes('Jetty') ||
+                                headers['server']?.includes('Undertow') ||
+                                response.data?.includes('Spring Boot') ||
+                                response.data?.includes('Whitelabel Error Page');
+            
+            console.log('🔍 Response headers:', headers);
+            console.log('🔍 Response data preview:', typeof response.data === 'string' ? response.data.substring(0, 200) : 'Not a string');
+            
+            return {
+                isSpringBoot: !!isSpringBoot,
+                details: {
+                    headers: headers,
+                    status: response.status,
+                    dataType: typeof response.data,
+                    dataPreview: typeof response.data === 'string' ? response.data.substring(0, 200) : 'Not a string'
+                }
+            };
+        } catch (error: any) {
+            // If we get a 401 error, it means the backend is running but requires authentication
+            if (error.response?.status === 401) {
+                console.log('✅ Backend is running (requires authentication)');
+                return {
+                    isSpringBoot: true, // Assume it's Spring Boot if it's responding with 401
+                    details: {
+                        status: error.response.status,
+                        error: 'Authentication required',
+                        message: 'Backend is running but requires authentication'
+                    }
+                };
+            }
+            console.error('❌ Error testing Spring Boot backend:', error.message);
+            return {
+                isSpringBoot: false,
+                details: { error: error.message }
+            };
+        }
+    },
+
+    // Test if backend is running on the expected port
+    testBackendPort: async (): Promise<{ isRunning: boolean; port: string; error?: string }> => {
+        const baseURL = axiosInstance.defaults.baseURL || API_BASE_URL;
+        const url = new URL(baseURL);
+        const port = url.port || (url.protocol === 'https:' ? '443' : '80');
+        
+        try {
+            console.log(`🔍 Testing backend on port ${port}...`);
+            const response = await axiosInstance.get('/');
+            console.log('✅ Backend is running on port', port);
+            return { isRunning: true, port };
+        } catch (error: any) {
+            // If we get a 401 error, it means the backend is running but requires authentication
+            if (error.response?.status === 401) {
+                console.log('✅ Backend is running on port', port, '(requires authentication)');
+                return { isRunning: true, port, error: 'Authentication required' };
+            }
+            console.error(`❌ Backend is not running on port ${port}:`, error.message);
+            return { isRunning: false, port, error: error.message };
+        }
+    },
+
+    // Health check function to test backend connectivity
+    healthCheck: async (): Promise<boolean> => {
+        try {
+            console.log('🏥 Testing backend connectivity...');
+            // Try Spring Boot specific endpoints first
+            const endpoints = [
+                '/actuator/health',
+                '/api/auth/health',
+                '/health',
+                '/'
+            ];
+            
+            for (const endpoint of endpoints) {
+                try {
+                    console.log(`🔍 Trying endpoint: ${endpoint}`);
+                    const response = await axiosInstance.get(endpoint);
+                    console.log(`✅ Backend is reachable via ${endpoint}:`, response.status);
+                    return true;
+                } catch (endpointError: any) {
+                    // If we get a 401 error, it means the backend is running but requires authentication
+                    if (endpointError.response?.status === 401) {
+                        console.log(`✅ Backend is reachable via ${endpoint} (requires authentication):`, endpointError.response.status);
+                        return true;
+                    }
+                    console.log(`⚠️ Endpoint ${endpoint} not available:`, endpointError.message);
+                    continue;
+                }
+            }
+            
+            console.error('❌ No backend endpoints are reachable');
+            return false;
+        } catch (error: any) {
+            console.error('❌ Backend is not reachable:', error.message);
+            return false;
+        }
+    },
+
+    // Validate registration payload
+    validateRegistrationPayload: (payload: any): { isValid: boolean; errors: string[] } => {
+        const errors: string[] = [];
+        
+        // Check required fields
+        const requiredFields = ['firstName', 'lastName', 'userName', 'email', 'password', 'companyRole', 'companyName'];
+        requiredFields.forEach(field => {
+            if (!payload[field] || payload[field].trim().length === 0) {
+                errors.push(`${field} is required`);
+            }
+        });
+        
+        // Check email format
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (payload.email && !emailRegex.test(payload.email)) {
+            errors.push('Invalid email format');
+        }
+        
+        // Check password length
+        if (payload.password && payload.password.length < 8) {
+            errors.push('Password must be at least 8 characters long');
+        }
+        
+        // Check role-specific requirements
+        if (payload.companyRole === 'OWNER') {
+            if (!payload.companyAddress || payload.companyAddress.trim().length === 0) {
+                errors.push('Company address is required for owners');
+            }
+            if (!payload.industry || payload.industry.trim().length === 0) {
+                errors.push('Industry is required for owners');
+            }
+        } else {
+            if (!payload.companyId || payload.companyId.trim().length === 0) {
+                errors.push('Company selection is required for non-owners');
+            }
+        }
+        
+        return {
+            isValid: errors.length === 0,
+            errors
+        };
+    },
+
     register: async (registerDto: any): Promise<any> => {
+        try {
+            console.log('🚀 Sending registration request with data:', registerDto);
+            console.log('🌐 Registration URL:', `${axiosInstance.defaults.baseURL}/api/auth/register`);
+            
+            // Validate payload before sending
+            const validation = authApi.validateRegistrationPayload(registerDto);
+            if (!validation.isValid) {
+                console.error('❌ Registration payload validation failed:', validation.errors);
+                throw new Error(`Registration validation failed: ${validation.errors.join(', ')}`);
+            }
+            
         const response = await axiosInstance.post('/api/auth/register', registerDto);
+            console.log('✅ Registration successful:', response.data);
         return response.data;
+        } catch (error: any) {
+            console.error('❌ Registration failed:', error);
+            console.error('❌ Error status:', error.response?.status);
+            console.error('❌ Error data:', error.response?.data);
+            console.error('❌ Error message:', error.message);
+            
+            // Extract error message from response
+            let errorMessage = 'Registration failed. Please try again.';
+            
+            if (error.response?.data) {
+                const backendError = error.response.data;
+                if (backendError.message) {
+                    errorMessage = backendError.message;
+                } else if (backendError.error) {
+                    errorMessage = backendError.error;
+                }
+            } else if (error.message) {
+                errorMessage = error.message;
+            }
+            
+            throw new Error(errorMessage);
+        }
     },
     
     login: async (loginDto: { email: string; password: string }): Promise<any> => {
@@ -126,21 +309,416 @@ export const authApi = {
     }
 };
 
-// AI Credits API
+// Enhanced Payment API matching backend CustomPaymentService
+export const paymentApi = {
+    // Create a payment account for the current user
+    createPaymentAccount: async (accountRequest: {
+        accountName: string;
+        currency?: string;
+    }): Promise<any> => {
+        try {
+            console.log('🏦 Creating payment account...');
+            
+            // Check user approval status before creating account
+            const user = localStorage.getItem('user');
+            if (user) {
+                try {
+                    const userData = JSON.parse(user);
+                    console.log('👤 User approval status:', userData.approvalStatus);
+                    
+                    if (userData.approvalStatus !== 'APPROVED') {
+                        console.log('🚫 User is not approved, cannot create payment account');
+                        return {
+                            success: false,
+                            error: 'USER_NOT_APPROVED',
+                            message: `Account approval required. Your account status is: ${userData.approvalStatus}. Please wait for approval before creating payment accounts.`
+                        };
+                    }
+                } catch (e) {
+                    console.error('❌ Failed to parse user data:', e);
+                }
+            }
+            
+            const response = await axiosInstance.post('/api/payment/account/create', {
+                accountName: accountRequest.accountName || 'Primary Account',
+                currency: accountRequest.currency || 'USD'
+            });
+            
+            // Backend returns ApiResponse structure: { success: boolean, message: string, data: object }
+            if (response.data.success) {
+                return {
+                    success: true,
+                    data: response.data.data
+                };
+            } else {
+                return {
+                    success: false,
+                    message: response.data.message || 'Failed to create payment account'
+                };
+            }
+        } catch (error: any) {
+            console.error('Failed to create payment account:', error);
+            
+            // Handle specific error cases
+            const errorMessage = error.response?.data?.message || error.response?.data?.error || '';
+            
+            // Check for approval-related errors
+            if (errorMessage.includes('not approved') || 
+                errorMessage.includes('pending') || 
+                errorMessage.includes('approval required')) {
+                return {
+                    success: false,
+                    error: 'USER_NOT_APPROVED',
+                    message: 'Your account must be approved before creating payment accounts. Please contact your administrator.'
+                };
+            }
+            
+            if (errorMessage.includes('already has a payment account')) {
+                // User already has an account, try to get the existing one
+                try {
+                    const existingAccount = await paymentApi.getUserPaymentAccount();
+                    if (existingAccount.success) {
+                        return {
+                            success: true,
+                            data: existingAccount.data,
+                            message: 'Using existing payment account'
+                        };
+                    }
+                } catch (getError) {
+                    console.error('Failed to get existing account:', getError);
+                }
+                
+                return {
+                    success: false,
+                    error: 'ACCOUNT_EXISTS',
+                    message: 'You already have a payment account. Please refresh the page.'
+                };
+            }
+            
+            throw new Error(errorMessage || 'Failed to create payment account');
+        }
+    },
+
+    // Get user's payment account
+    getUserPaymentAccount: async (): Promise<any> => {
+        try {
+            console.log('🏦 Making payment account request...');
+            
+            // Debug authentication state
+            const token = localStorage.getItem('accessToken');
+            const user = localStorage.getItem('user');
+            console.log('🔑 Auth token present:', !!token);
+            console.log('👤 User data present:', !!user);
+            
+            if (user) {
+                try {
+                    const userData = JSON.parse(user);
+                    console.log('👤 User role:', userData.companyRole);
+                    console.log('👤 User ID:', userData.id);
+                    console.log('�� Approval status:', userData.approvalStatus);
+                    
+                    // Check if user is approved before making payment requests
+                    if (userData.approvalStatus !== 'APPROVED') {
+                        console.log('🚫 User is not approved, cannot access payment features');
+                        return {
+                            success: false,
+                            error: 'USER_NOT_APPROVED',
+                            message: `Account approval required. Your account status is: ${userData.approvalStatus}. Please wait for approval before accessing payment features.`
+                        };
+                    }
+                } catch (e) {
+                    console.error('❌ Failed to parse user data:', e);
+                }
+            }
+            
+            const response = await axiosInstance.get('/api/payment/user/current/account');
+            console.log('✅ Payment account response:', response.status, response.data);
+            
+            // Backend returns ApiResponse structure: { success: boolean, message: string, data: object }
+            if (response.data.success) {
+                return {
+                    success: true,
+                    data: response.data.data // The actual data is nested in data.data
+                };
+            } else {
+                return {
+                    success: false,
+                    error: 'NO_ACCOUNT_FOUND',
+                    message: response.data.message || 'No payment account found'
+                };
+            }
+        } catch (error: any) {
+            console.error('❌ Payment account request failed:', error);
+            console.error('❌ Error status:', error.response?.status);
+            console.error('❌ Error data:', error.response?.data);
+            console.error('❌ Error headers:', error.response?.headers);
+            
+            // Check if it's a "no account found" error
+            if (error.response?.status === 400) {
+                const errorMessage = error.response?.data?.message || error.response?.data?.error || '';
+                console.log('🔍 400 Error message:', errorMessage);
+                
+                // Check for approval-related errors
+                if (errorMessage.includes('not approved') || 
+                    errorMessage.includes('pending') || 
+                    errorMessage.includes('approval required')) {
+                    return {
+                        success: false,
+                        error: 'USER_NOT_APPROVED',
+                        message: 'Your account must be approved before accessing payment features. Please contact your administrator.'
+                    };
+                }
+                
+                if (errorMessage.includes('No active payment account found') || 
+                    errorMessage.includes('not found')) {
+                    return {
+                        success: false,
+                        error: 'NO_ACCOUNT_FOUND',
+                        message: 'No payment account found. Please create one first.'
+                    };
+                }
+            }
+            
+            // Check for authentication/authorization errors
+            if (error.response?.status === 401) {
+                console.error('🚫 Authentication failed - user not logged in or token expired');
+                throw new Error('Authentication required. Please log in again.');
+            }
+            
+            if (error.response?.status === 403) {
+                console.error('🚫 Authorization failed - user does not have required permissions');
+                throw new Error('You do not have permission to access payment features. Please contact your administrator.');
+            }
+            
+            // For other errors, throw to be handled by caller
+            throw new Error(error.response?.data?.message || error.response?.data?.error || 'Failed to get payment account');
+        }
+    },
+
+    // Get account statistics
+    getAccountStatistics: async (): Promise<any> => {
+        try {
+            const response = await axiosInstance.get('/api/payment/account/statistics');
+            return response.data;
+        } catch (error: any) {
+            console.error('Failed to get account statistics:', error);
+            throw new Error(error.response?.data?.message || 'Failed to get account statistics');
+        }
+    },
+
+    // Deposit money to payment account
+    deposit: async (depositRequest: {
+        amount: number;
+        paymentMethod: string;
+        description?: string;
+    }): Promise<any> => {
+        try {
+            const response = await axiosInstance.post('/api/payment/deposit', {
+                amount: depositRequest.amount,
+                paymentMethod: depositRequest.paymentMethod,
+                description: depositRequest.description || 'Account deposit',
+                currency: 'USD'
+            });
+            
+            // Backend returns ApiResponse structure: { success: boolean, message: string, data: object }
+            if (response.data.success) {
+                return {
+                    success: true,
+                    data: response.data.data
+                };
+            } else {
+                return {
+                    success: false,
+                    message: response.data.message || 'Failed to process deposit'
+                };
+            }
+        } catch (error: any) {
+            console.error('Failed to process deposit:', error);
+            throw new Error(error.response?.data?.message || error.response?.data?.error || 'Failed to process deposit');
+        }
+    },
+
+    // Purchase credits using account balance
+    purchaseCredits: async (purchaseRequest: {
+        creditPackageId: string;
+        amount: number;
+    }): Promise<any> => {
+        try {
+            const response = await axiosInstance.post('/api/payment/credits/purchase', {
+                creditPackageId: purchaseRequest.creditPackageId,
+                amount: purchaseRequest.amount
+            });
+            
+            // Backend returns ApiResponse structure: { success: boolean, message: string, data: object }
+            if (response.data.success) {
+                return {
+                    success: true,
+                    data: response.data.data
+                };
+            } else {
+                return {
+                    success: false,
+                    message: response.data.message || 'Failed to purchase credits'
+                };
+            }
+        } catch (error: any) {
+            console.error('Failed to purchase credits:', error);
+            throw new Error(error.response?.data?.message || error.response?.data?.error || 'Failed to purchase credits');
+        }
+    },
+
+    // Get available credit packages
+    getCreditPackages: async (): Promise<any> => {
+        try {
+            const response = await axiosInstance.get('/api/payment/credits/packages');
+            
+            // Backend returns ApiResponse structure: { success: boolean, message: string, data: object }
+            if (response.data.success) {
+                return {
+                    success: true,
+                    data: response.data.data
+                };
+            } else {
+                return {
+                    success: false,
+                    message: response.data.message || 'Failed to get credit packages'
+                };
+            }
+        } catch (error: any) {
+            console.error('Failed to get credit packages:', error);
+            throw new Error(error.response?.data?.message || error.response?.data?.error || 'Failed to get credit packages');
+        }
+    },
+
+    // Get credit pricing (alias for getCreditPackages for backward compatibility)
+    getCreditPricing: async (): Promise<any> => {
+        try {
+            const response = await axiosInstance.get('/api/payment/credits/packages');
+            
+            // Backend returns ApiResponse structure: { success: boolean, message: string, data: object }
+            if (response.data.success) {
+                return {
+                    success: true,
+                    data: response.data.data
+                };
+            } else {
+                return {
+                    success: false,
+                    message: response.data.message || 'Failed to get credit pricing'
+                };
+            }
+        } catch (error: any) {
+            console.error('Failed to get credit pricing:', error);
+            throw new Error(error.response?.data?.message || error.response?.data?.error || 'Failed to get credit pricing');
+        }
+    },
+
+    // Get transaction history
+    getTransactionHistory: async (page?: number, size?: number): Promise<any> => {
+        try {
+            const params = new URLSearchParams();
+            if (page !== undefined) params.append('page', page.toString());
+            if (size !== undefined) params.append('size', size.toString());
+            
+            const response = await axiosInstance.get(`/api/payment/transactions?${params.toString()}`);
+            return response.data;
+        } catch (error: any) {
+            console.error('Failed to get transaction history:', error);
+            throw new Error(error.response?.data?.message || 'Failed to get transaction history');
+        }
+    },
+
+    // Get specific transaction by ID
+    getTransaction: async (transactionId: string): Promise<any> => {
+        try {
+            const response = await axiosInstance.get(`/api/payment/transactions/${transactionId}`);
+            return response.data;
+        } catch (error: any) {
+            console.error('Failed to get transaction:', error);
+            throw new Error(error.response?.data?.message || 'Failed to get transaction');
+        }
+    },
+
+    // Get payment analytics dashboard
+    getPaymentDashboard: async (): Promise<any> => {
+        try {
+            const response = await axiosInstance.get('/api/payment/analytics/dashboard');
+            return response.data;
+        } catch (error: any) {
+            console.error('Failed to get payment dashboard:', error);
+            throw new Error(error.response?.data?.message || 'Failed to get payment dashboard');
+        }
+    },
+
+    // Get user analytics
+    getUserAnalytics: async (days?: number): Promise<any> => {
+        try {
+            const params = new URLSearchParams();
+            if (days !== undefined) params.append('days', days.toString());
+            
+            const response = await axiosInstance.get(`/api/payment/analytics/user?${params.toString()}`);
+            return response.data;
+        } catch (error: any) {
+            console.error('Failed to get user analytics:', error);
+            throw new Error(error.response?.data?.message || 'Failed to get user analytics');
+        }
+    },
+
+    // Get fraud trends (admin only)
+    getFraudTrends: async (days?: number): Promise<any> => {
+        try {
+            const params = new URLSearchParams();
+            if (days !== undefined) params.append('days', days.toString());
+            
+            const response = await axiosInstance.get(`/api/payment/analytics/fraud-trends?${params.toString()}`);
+            return response.data;
+        } catch (error: any) {
+            console.error('Failed to get fraud trends:', error);
+            throw new Error(error.response?.data?.message || 'Failed to get fraud trends');
+        }
+    },
+
+    // Legacy methods for backward compatibility - these will be removed later
+    createPaymentAccountLegacy: async (initialBalance: number): Promise<any> => {
+        return paymentApi.createPaymentAccount({
+            accountName: 'Primary Account',
+            currency: 'USD'
+        });
+    },
+
+    depositToAccount: async (accountNumber: string, amount: number): Promise<any> => {
+        return paymentApi.deposit({
+            amount: amount,
+            paymentMethod: 'ACCOUNT_BALANCE',
+            description: `Deposit to account ${accountNumber}`
+        });
+    },
+
+    quickDeposit: async (accountNumber: string, amountType: 'SMALL' | 'MEDIUM' | 'LARGE'): Promise<any> => {
+        const amount = amountType === 'SMALL' ? 10.00 : 
+                     amountType === 'MEDIUM' ? 25.00 : 
+                     amountType === 'LARGE' ? 50.00 : 10.00;
+        
+        return paymentApi.deposit({
+            amount: amount,
+            paymentMethod: 'ACCOUNT_BALANCE',
+            description: `Quick deposit - ${amountType.toLowerCase()}`
+        });
+    }
+};
+
+// Enhanced AI Credits API matching backend AICreditService
 export const aiCreditsApi = {
     // Get user's current credit balance and stats
     getCreditBalance: async (): Promise<any> => {
         try {
             console.log('🔍 Making credit balance API call...');
-            // Add timestamp to prevent caching
             const timestamp = Date.now();
             const response = await axiosInstance.get(`/api/credits/balance?t=${timestamp}`);
-            console.log('🔍 Raw API response:', response);
-            console.log('🔍 Response data:', response.data);
+            console.log('🔍 Credit balance response:', response.data);
             return response.data;
         } catch (error: any) {
             console.error('Failed to get credit balance:', error);
-            console.error('Error response:', error.response);
             throw new Error(error.response?.data?.message || 'Failed to load credit information');
         }
     },
@@ -156,23 +734,25 @@ export const aiCreditsApi = {
         }
     },
 
-    // Purchase credits (placeholder for payment integration)
-    purchaseCredits: async (amount: number, paymentMethod: string): Promise<any> => {
+    // Get credit usage statistics
+    getCreditStats: async (): Promise<any> => {
         try {
-            const response = await axiosInstance.post('/api/credits/purchase', null, {
-                params: { amount, paymentMethod }
-            });
+            const response = await axiosInstance.get('/api/credits/stats');
             return response.data;
         } catch (error: any) {
-            console.error('Failed to purchase credits:', error);
-            throw new Error(error.response?.data?.message || 'Failed to purchase credits');
+            console.error('Failed to get credit stats:', error);
+            throw new Error(error.response?.data?.message || 'Failed to get credit stats');
         }
     },
 
-    // Get credit usage history
-    getCreditHistory: async (): Promise<any> => {
+    // Get credit history with pagination
+    getCreditHistory: async (page?: number, size?: number): Promise<any> => {
         try {
-            const response = await axiosInstance.get('/api/credits/history');
+            const params = new URLSearchParams();
+            if (page !== undefined) params.append('page', page.toString());
+            if (size !== undefined) params.append('size', size.toString());
+            
+            const response = await axiosInstance.get(`/api/credits/history?${params.toString()}`);
             return response.data;
         } catch (error: any) {
             console.error('Failed to get credit history:', error);
@@ -180,25 +760,13 @@ export const aiCreditsApi = {
         }
     },
 
-    // Get credit pricing information
-    getCreditPricing: async (): Promise<any> => {
-        try {
-            const response = await axiosInstance.get('/api/credits/pricing');
-            return response.data;
-        } catch (error: any) {
-            console.error('Failed to get credit pricing:', error);
-            throw new Error(error.response?.data?.message || 'Failed to load pricing information');
-        }
-    },
-
-
-
     // Admin: Add credits to user account
     addCreditsToUser: async (userId: string, amount: number, reason?: string): Promise<any> => {
         try {
-            const response = await axiosInstance.post('/api/credits/add', null, {
-                params: { userId, amount, reason }
-            });
+            const params = new URLSearchParams({ userId, amount: amount.toString() });
+            if (reason) params.append('reason', reason);
+            
+            const response = await axiosInstance.post(`/api/credits/add?${params.toString()}`);
             return response.data;
         } catch (error: any) {
             console.error('Failed to add credits to user:', error);
@@ -215,24 +783,104 @@ export const aiCreditsApi = {
             console.error('Failed to get credits overview:', error);
             throw new Error(error.response?.data?.message || 'Failed to load credits overview');
         }
+    },
+
+    // Deduct credits for chat (this happens automatically on the backend)
+    deductChatCredits: async (conversationId?: string, reason?: string): Promise<any> => {
+        try {
+            const params = new URLSearchParams();
+            if (conversationId) params.append('conversationId', conversationId);
+            if (reason) params.append('reason', reason);
+            
+            const response = await axiosInstance.post(`/api/credits/deduct-chat?${params.toString()}`);
+            return response.data;
+        } catch (error: any) {
+            console.error('Failed to deduct chat credits:', error);
+            throw new Error(error.response?.data?.message || 'Failed to deduct credits');
+        }
+    },
+
+    // Refund credits (e.g., if chat fails)
+    refundCredits: async (amount: number, reason?: string, conversationId?: string): Promise<any> => {
+        try {
+            const params = new URLSearchParams({ amount: amount.toString() });
+            if (reason) params.append('reason', reason);
+            if (conversationId) params.append('conversationId', conversationId);
+            
+            const response = await axiosInstance.post(`/api/credits/refund?${params.toString()}`);
+            return response.data;
+        } catch (error: any) {
+            console.error('Failed to refund credits:', error);
+            throw new Error(error.response?.data?.message || 'Failed to refund credits');
+        }
+    },
+
+    // Legacy methods for backward compatibility
+    purchaseCredits: async (amount: number, paymentMethod: string): Promise<any> => {
+        try {
+            const response = await axiosInstance.post('/api/credits/purchase', null, {
+                params: { amount, paymentMethod }
+            });
+            return response.data;
+        } catch (error: any) {
+            console.error('Failed to purchase credits:', error);
+            throw new Error(error.response?.data?.message || 'Failed to purchase credits');
+        }
+    },
+
+    getCreditPricing: async (): Promise<any> => {
+        try {
+            const response = await axiosInstance.get('/api/credits/pricing');
+            return response.data;
+        } catch (error: any) {
+            console.error('Failed to get credit pricing:', error);
+            throw new Error(error.response?.data?.message || 'Failed to load pricing information');
+        }
     }
 };
 
 // Company API
 export const companyApi = {
     searchCompanies: async (query: string): Promise<any[]> => {
-        const response = await axiosInstance.get(`/api/companies/search?q=${encodeURIComponent(query)}`);
-        return response.data;
+        try {
+            console.log('🔍 Searching companies with query:', query);
+            const response = await axiosInstance.get(`/api/public/companies?query=${encodeURIComponent(query)}`);
+            console.log('✅ Company search response:', response.data);
+            return response.data;
+        } catch (error: any) {
+            console.error('❌ Company search failed:', error);
+            if (error.response?.status === 400) {
+                // If the backend doesn't support search without query, return empty array
+                console.log('⚠️ Backend requires query parameter, returning empty results');
+                return [];
+            }
+            throw error;
+        }
     },
 
     getAllCompanies: async (): Promise<any[]> => {
-        const response = await axiosInstance.get('/api/companies');
-        return response.data;
+        try {
+            console.log('🔍 Getting all companies...');
+            const response = await axiosInstance.get('/api/public/companies');
+            console.log('✅ All companies response:', response.data);
+            return response.data;
+        } catch (error: any) {
+            console.error('❌ Get all companies failed:', error);
+            // If the backend doesn't support getting all companies, return empty array
+            return [];
+        }
     },
 
     getCompanyById: async (companyId: string): Promise<any> => {
-        const response = await axiosInstance.get(`/api/companies/${companyId}`);
-        return response.data;
+        try {
+            console.log('🔍 Getting company by ID:', companyId);
+            const response = await axiosInstance.get(`/api/public/companies/${companyId}`);
+            console.log('✅ Company by ID response:', response.data);
+            return response.data;
+        } catch (error: any) {
+            console.error('❌ Get company by ID failed:', error);
+            throw error;
+        }
     }
 };
 
@@ -461,336 +1109,5 @@ export const aiChatApi = {
     clearContextCache: async (): Promise<any> => {
         const response = await axiosInstance.post('/api/ai/cache/clear');
         return response.data;
-    }
-};
-
-// Payment API
-export const paymentApi = {
-    // Create a payment account for the current user
-    createPaymentAccount: async (initialBalance: number): Promise<any> => {
-        try {
-            const response = await axiosInstance.post('/api/payment/account/create', null, {
-                params: { initialBalance }
-            });
-            return response.data;
-        } catch (error: any) {
-            console.error('Failed to create payment account:', error);
-            throw new Error(error.response?.data?.message || 'Failed to create payment account');
-        }
-    },
-
-    // Get payment account details
-    getPaymentAccount: async (accountNumber: string): Promise<any> => {
-        try {
-            const response = await axiosInstance.get(`/api/payment/account/${accountNumber}`);
-            return response.data;
-        } catch (error: any) {
-            console.error('Failed to get payment account:', error);
-            throw new Error(error.response?.data?.message || 'Failed to get payment account');
-        }
-    },
-
-    // Purchase credits using payment account
-    purchaseCredits: async (purchaseRequest: {
-        accountNumber: string;
-        paymentMethod: string;
-        creditPackage: string;
-        creditAmount: number;
-        amount: number;
-    }): Promise<any> => {
-        try {
-            const response = await axiosInstance.post('/api/payment/credits/purchase', purchaseRequest);
-            return response.data;
-        } catch (error: any) {
-            console.error('Failed to purchase credits:', error);
-            throw new Error(error.response?.data?.message || 'Failed to purchase credits');
-        }
-    },
-
-    // Get credit pricing information
-    getCreditPricing: async (): Promise<any> => {
-        try {
-            const response = await axiosInstance.get('/api/payment/credits/pricing');
-            return response.data;
-        } catch (error: any) {
-            console.error('Failed to get credit pricing:', error);
-            throw new Error(error.response?.data?.message || 'Failed to load pricing information');
-        }
-    },
-
-    // Deposit money to payment account (simple)
-    depositToAccount: async (accountNumber: string, amount: number): Promise<any> => {
-        try {
-            // Use the simple deposit endpoint directly
-            const response = await axiosInstance.post('/api/payment/account/deposit', null, {
-                params: { accountNumber, amount }
-            });
-            return response.data;
-        } catch (error: any) {
-            console.error('Failed to deposit to account:', error);
-            console.error('Error details:', {
-                status: error.response?.status,
-                statusText: error.response?.statusText,
-                data: error.response?.data,
-                message: error.message,
-                accountNumber: accountNumber,
-                amount: amount
-            });
-            throw new Error(error.response?.data?.message || 'Failed to deposit funds');
-        }
-    },
-
-    // Advanced deposit with payment method details
-    depositToAccountAdvanced: async (depositRequest: {
-        accountNumber: string;
-        amount: number;
-        paymentMethod: string;
-        cardNumber?: string;
-        bankAccount?: string;
-    }): Promise<any> => {
-        try {
-            const response = await axiosInstance.post('/api/payment/account/deposit/advanced', depositRequest);
-            return response.data;
-        } catch (error: any) {
-            console.error('Failed to process advanced deposit:', error);
-            throw new Error(error.response?.data?.message || 'Failed to process deposit');
-        }
-    },
-
-    // Quick deposit with predefined amounts
-    quickDeposit: async (accountNumber: string, amountType: 'SMALL' | 'MEDIUM' | 'LARGE'): Promise<any> => {
-        try {
-            // Use hardcoded amounts to avoid API calls that might fail
-            const amount = amountType === 'SMALL' ? 10.00 : 
-                          amountType === 'MEDIUM' ? 25.00 : 
-                          amountType === 'LARGE' ? 50.00 : 10.00;
-            
-            // Use the simple deposit endpoint directly - this should work
-            const response = await axiosInstance.post('/api/payment/account/deposit', null, {
-                params: { accountNumber, amount }
-            });
-            return response.data;
-        } catch (error: any) {
-            console.error('Failed to process quick deposit:', error);
-            console.error('Error details:', {
-                status: error.response?.status,
-                statusText: error.response?.statusText,
-                data: error.response?.data,
-                message: error.message,
-                accountNumber,
-                amountType,
-                amount: amountType === 'SMALL' ? 10.00 : 
-                       amountType === 'MEDIUM' ? 25.00 : 
-                       amountType === 'LARGE' ? 50.00 : 10.00
-            });
-            throw new Error(error.response?.data?.message || 'Failed to process quick deposit');
-        }
-    },
-
-    // Get deposit options and amounts
-    getDepositOptions: async (): Promise<any> => {
-        try {
-            const response = await axiosInstance.get('/api/payment/deposit/options');
-            return response.data;
-        } catch (error: any) {
-            console.error('Failed to get deposit options:', error);
-            throw new Error(error.response?.data?.message || 'Failed to load deposit options');
-        }
-    },
-
-    // Get payment history for user
-    getPaymentHistory: async (accountNumber: string): Promise<any> => {
-        try {
-            const response = await axiosInstance.get('/api/payment/history', {
-                params: { accountNumber }
-            });
-            return response.data;
-        } catch (error: any) {
-            console.error('Failed to get payment history:', error);
-            // Return demo data if API fails
-            return {
-                status: 'success',
-                data: {
-                    accountNumber: accountNumber,
-                    transactions: [
-                        {
-                            transactionId: 'TXN_001',
-                            accountNumber: accountNumber,
-                            status: 'COMPLETED',
-                            amount: 24.99,
-                            paymentMethod: 'CARD',
-                            transactionReference: 'TXN_PREMIUM_001',
-                            creditsPurchased: 350,
-                            creditPackage: 'PREMIUM',
-                            createdDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString()
-                        },
-                        {
-                            transactionId: 'TXN_002',
-                            accountNumber: accountNumber,
-                            status: 'COMPLETED',
-                            amount: 12.99,
-                            paymentMethod: 'WALLET',
-                            transactionReference: 'TXN_STANDARD_001',
-                            creditsPurchased: 150,
-                            creditPackage: 'STANDARD',
-                            createdDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
-                        },
-                        {
-                            transactionId: 'TXN_003',
-                            accountNumber: accountNumber,
-                            status: 'COMPLETED',
-                            amount: 50.0,
-                            paymentMethod: 'BANK_TRANSFER',
-                            transactionReference: 'TXN_DEPOSIT_001',
-                            createdDate: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString()
-                        }
-                    ],
-                    summary: {
-                        totalTransactions: 3,
-                        completedTransactions: 3,
-                        failedTransactions: 0,
-                        pendingTransactions: 0,
-                        totalSpent: 87.97
-                    }
-                }
-            };
-        }
-    },
-
-    // Admin: Add funds to any user's account
-    adminAddFunds: async (accountNumber: string, amount: number, reason?: string): Promise<any> => {
-        try {
-            const params = new URLSearchParams({ accountNumber, amount: amount.toString() });
-            if (reason) params.append('reason', reason);
-            
-            const response = await axiosInstance.post(`/api/payment/admin/add-funds?${params.toString()}`);
-            return response.data;
-        } catch (error: any) {
-            console.error('Failed to add admin funds:', error);
-            throw new Error(error.response?.data?.message || 'Failed to add funds');
-        }
-    },
-
-    // Admin: Get all user payment accounts
-    getAllUserPaymentAccounts: async (): Promise<any> => {
-        try {
-            const response = await axiosInstance.get('/api/payment/admin/all-accounts');
-            return response.data;
-        } catch (error: any) {
-            console.error('Failed to get all user payment accounts:', error);
-            throw new Error(error.response?.data?.message || 'Failed to load user accounts');
-        }
-    },
-
-    // Get credit transaction history
-    getCreditTransactionHistory: async (userId: string): Promise<any> => {
-        try {
-            const response = await axiosInstance.get(`/api/credits/history`);
-            return response.data;
-        } catch (error: any) {
-            console.error('Failed to get credit transaction history:', error);
-            // Return demo data if API fails
-            return {
-                status: 'success',
-                data: {
-                    transactions: [
-                        {
-                            id: 'CT_001',
-                            type: 'CREDIT_PURCHASE',
-                            typeDescription: 'Credit Purchase',
-                            amount: 350,
-                            balanceBefore: 50,
-                            balanceAfter: 400,
-                            reason: 'Premium package purchase',
-                            timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString()
-                        },
-                        {
-                            id: 'CT_002',
-                            type: 'CHAT_DEDUCTION',
-                            typeDescription: 'Chat Credit Deduction',
-                            amount: -2,
-                            balanceBefore: 400,
-                            balanceAfter: 398,
-                            reason: 'Chat conversation with Rin',
-                            conversationId: 'CONV_001',
-                            timestamp: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString()
-                        },
-                        {
-                            id: 'CT_003',
-                            type: 'AUTO_REFILL',
-                            typeDescription: 'Automatic Credit Refill',
-                            amount: 1,
-                            balanceBefore: 398,
-                            balanceAfter: 399,
-                            reason: 'Automatic credit refill',
-                            timestamp: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString()
-                        }
-                    ],
-                    totalTransactions: 3,
-                    currentBalance: 399
-                }
-            };
-        }
-    },
-
-    // Get user's payment account by user ID
-    getUserPaymentAccount: async (userId: string): Promise<any> => {
-        try {
-            const response = await axiosInstance.get(`/api/payment/user/${userId}/account`);
-            return response.data;
-        } catch (error: any) {
-            console.error('Failed to get user payment account:', error);
-            throw new Error(error.response?.data?.message || 'Failed to load payment account');
-        }
-    },
-
-    // Get credit pricing information
-    getCreditPricing: async (): Promise<any> => {
-        try {
-            const response = await axiosInstance.get('/api/payment/credits/pricing');
-            return response.data;
-        } catch (error: any) {
-            console.error('Failed to get credit pricing:', error);
-            throw new Error(error.response?.data?.message || 'Failed to load credit pricing');
-        }
-    },
-
-    // Purchase AI credits
-    purchaseCredits: async (purchaseRequest: {
-        accountNumber: string;
-        paymentMethod: string;
-        creditPackage: string;
-        creditAmount: number;
-        amount: number;
-    }): Promise<any> => {
-        try {
-            const response = await axiosInstance.post('/api/payment/credits/purchase', purchaseRequest);
-            return response.data;
-        } catch (error: any) {
-            console.error('Failed to purchase credits:', error);
-            throw new Error(error.response?.data?.message || 'Failed to purchase credits');
-        }
-    },
-
-    // Get AI credit balance
-    getCreditBalance: async (): Promise<any> => {
-        try {
-            const response = await axiosInstance.get('/api/credits/balance');
-            return response.data;
-        } catch (error: any) {
-            console.error('Failed to get credit balance:', error);
-            throw new Error(error.response?.data?.message || 'Failed to load credit balance');
-        }
-    },
-
-    // Check if user can chat
-    canUserChat: async (): Promise<any> => {
-        try {
-            const response = await axiosInstance.get('/api/credits/can-chat');
-            return response.data;
-        } catch (error: any) {
-            console.error('Failed to check chat availability:', error);
-            throw new Error(error.response?.data?.message || 'Failed to check chat availability');
-        }
     }
 };

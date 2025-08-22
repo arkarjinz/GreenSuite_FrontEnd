@@ -140,72 +140,58 @@ export default function ChatInterface() {
 
         try {
             console.log('💰 Loading credit info for user:', user.id);
-            console.log('💰 User authentication check:', {
-                userId: user.id,
-                userEmail: user.email,
-                hasAccessToken: !!localStorage.getItem('accessToken'),
-                hasRefreshToken: !!localStorage.getItem('refreshToken')
-            });
             const response = await aiCreditsApi.getCreditBalance();
             console.log('💰 Credit API response:', response);
-            console.log('💰 Response structure:', {
-                success: response.status === 'success',
-                hasData: !!response.data,
-                dataKeys: response ? Object.keys(response) : 'No data',
-                dataType: typeof response,
-                actualData: response.data
-            });
             
-            if (response.status === 'success' && response.data) {
+            if (response.success && response.data) {
                 const creditData = response.data;
                 console.log('💰 Setting credit info:', creditData);
-                console.log('💰 Credit data validation:', {
-                    hasCurrentCredits: 'currentCredits' in creditData,
-                    currentCredits: creditData.currentCredits,
-                    hasChatCost: 'chatCost' in creditData,
-                    chatCost: creditData.chatCost,
-                    hasCanChat: 'canChat' in creditData,
-                    canChat: creditData.canChat
-                });
                 setCreditInfo(creditData);
                 
                 // Show warning if low on credits
                 if (creditData.isLowOnCredits && creditData.currentCredits > 0) {
                     setShowCreditWarning(true);
-                    setTimeout(() => setShowCreditWarning(false), 8000); // Hide after 8 seconds
+                    setTimeout(() => setShowCreditWarning(false), 8000);
                 }
             } else {
                 console.warn('⚠️ Credit API returned no data, using defaults');
-                console.log('⚠️ Response details:', {
-                    status: response.status,
-                    data: response.data,
-                    message: response.message
-                });
                 // Set reasonable defaults if API returns no data
                 setCreditInfo({
-                    currentCredits: 50, // Default credits from backend
-                    chatCost: 2, // Default chat cost from backend
-                    canChat: true, // Allow chat by default
+                    currentCredits: 50,
+                    chatCost: 2,
+                    canChat: true,
                     possibleChats: 25,
                     isLowOnCredits: false
                 });
             }
         } catch (error: any) {
             console.error('❌ Error loading credit info:', error);
-            console.error('❌ Error details:', {
-                message: error.message,
-                status: error.response?.status,
-                data: error.response?.data,
-                stack: error.stack
-            });
-            // Set reasonable default credit info if API fails
-            setCreditInfo({
-                currentCredits: 50, // Default credits from backend
-                chatCost: 2, // Default chat cost from backend
-                canChat: true, // Allow chat when API fails
-                possibleChats: 25,
-                isLowOnCredits: false
-            });
+            
+            // Handle specific error cases
+            if (error.message?.includes('Insufficient')) {
+                // User has no credits
+                setCreditInfo({
+                    currentCredits: 0,
+                    chatCost: 2,
+                    canChat: false,
+                    possibleChats: 0,
+                    isLowOnCredits: true,
+                    warning: 'You have no credits remaining. Please purchase more to continue chatting.'
+                });
+                setShowCreditWarning(true);
+                setTimeout(() => setShowCreditWarning(false), 10000);
+            } else {
+                // Other errors - set safe defaults but warn user
+                console.warn('⚠️ Error loading credits, using defaults. User may still be able to chat.');
+                setCreditInfo({
+                    currentCredits: 50,
+                    chatCost: 2,
+                    canChat: true,
+                    possibleChats: 25,
+                    isLowOnCredits: false,
+                    warning: 'Could not load credit information. Some features may be limited.'
+                });
+            }
         }
     };
 
@@ -478,29 +464,74 @@ export default function ChatInterface() {
             return;
         }
 
-        // Check if user has enough credits - only block if we have explicit credit info AND can't chat
-        if (creditInfo && creditInfo.canChat === false && creditInfo.currentCredits < creditInfo.chatCost) {
-            console.log('❌ Credit check failed:', { 
-                canChat: creditInfo.canChat, 
-                currentCredits: creditInfo.currentCredits, 
-                chatCost: creditInfo.chatCost 
-            });
-            addMessage({
-                id: `no_credits_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-                content: `I'm quite sorry, but it appears you don't have sufficient credits to continue our environmental discussion. You need ${creditInfo.chatCost} credits per chat, but you only have ${creditInfo.currentCredits}. Perhaps you could consider purchasing additional credits so we might continue learning about sustainability together?`,
-                isUser: false,
-                timestamp: new Date()
-            });
-            return;
+        // Enhanced credit checking - check both API response and local state
+        try {
+            console.log('💰 Checking credits before sending message...');
+            const creditCheckResponse = await aiCreditsApi.canUserChat();
+            
+            // If the API explicitly says user cannot chat
+            if (creditCheckResponse && !creditCheckResponse.canChat) {
+                console.log('❌ Backend credit check failed:', creditCheckResponse);
+                addMessage({
+                    id: `no_credits_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+                    content: `💸 **Oh dear!** It seems you don't have enough credits to continue our environmental chat. Each conversation costs **${creditCheckResponse.chatCost || 2} credits**, but you only have **${creditCheckResponse.currentCredits || 0} credits** remaining.\n\n🌱 To continue learning about sustainability with me, you'll need to purchase more credits. Would you like to visit the payment section to add more credits to your account?`,
+                    isUser: false,
+                    timestamp: new Date()
+                });
+                
+                // Refresh credit info to update UI
+                await loadCreditInfo();
+                return;
+            }
+            
+            // Also check local credit info as backup
+            if (creditInfo && creditInfo.canChat === false) {
+                console.log('❌ Local credit check failed:', creditInfo);
+                addMessage({
+                    id: `no_credits_local_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+                    content: `💸 **Insufficient Credits!** You need **${creditInfo.chatCost || 2} credits** per conversation, but you only have **${creditInfo.currentCredits || 0} credits** remaining.\n\n🌱 Please purchase more credits to continue our environmental discussions!`,
+                    isUser: false,
+                    timestamp: new Date()
+                });
+                return;
+            }
+            
+            console.log('✅ Credit check passed, proceeding with message');
+            
+        } catch (creditError: any) {
+            console.error('❌ Error checking credits:', creditError);
+            
+            // If credit check fails due to insufficient credits, block the chat
+            if (creditError.message?.includes('Insufficient') || creditError.message?.includes('credits')) {
+                addMessage({
+                    id: `no_credits_error_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+                    content: `💸 **No Credits Remaining!** I'm afraid you've run out of credits to continue our environmental discussions.\n\n🌱 Each chat costs **2 credits**, and it looks like your account needs a top-up. Please visit the payment section to purchase more credits!`,
+                    isUser: false,
+                    timestamp: new Date()
+                });
+                
+                // Update credit info to reflect no credits
+                setCreditInfo(prev => ({
+                    currentCredits: 0,
+                    chatCost: prev?.chatCost || 2,
+                    canChat: false,
+                    possibleChats: 0,
+                    isLowOnCredits: true,
+                    warning: prev?.warning,
+                    creditsUsed: prev?.creditsUsed,
+                    remainingCredits: prev?.remainingCredits,
+                    totalCreditsPurchased: prev?.totalCreditsPurchased,
+                    totalCreditsUsed: prev?.totalCreditsUsed,
+                    subscriptionTier: prev?.subscriptionTier,
+                    maxCredits: prev?.maxCredits,
+                    canReceiveCredits: prev?.canReceiveCredits
+                }));
+                return;
+            }
+            
+            // For other errors, warn but allow the chat to proceed
+            console.warn('⚠️ Credit check failed, but allowing chat to proceed:', creditError.message);
         }
-        
-        // Log credit status for debugging
-        console.log('💰 Credit status before sending message:', {
-            hasCreditInfo: !!creditInfo,
-            canChat: creditInfo?.canChat,
-            currentCredits: creditInfo?.currentCredits,
-            chatCost: creditInfo?.chatCost
-        });
 
         // Check if we have valid tokens
         const accessToken = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
@@ -543,10 +574,11 @@ export default function ChatInterface() {
                 await sendSyncMessage(currentInput);
             }
 
-            // Refresh credit info after successful chat with a small delay to ensure backend processing
+            // Refresh credit info after successful chat to show updated balance
             setTimeout(async () => {
                 await loadCreditInfo();
             }, 500);
+            
         } catch (error: any) {
             console.error('❌ Chat error details:', {
                 message: error.message,
@@ -555,10 +587,35 @@ export default function ChatInterface() {
                 stack: error.stack
             });
             
-            // Don't let chat errors cause logout - handle gracefully
+            // Handle specific error cases
             let errorMessage = "I'm experiencing some difficulty with my systems at the moment... Perhaps we could try again in a little while?";
             
-            if (error.message?.includes('Authentication')) {
+            if (error.message?.includes('Insufficient credits') || error.message?.includes('credits')) {
+                errorMessage = "💸 **Oops!** It looks like you've run out of credits during our conversation. Please purchase more credits to continue our environmental discussions!";
+                
+                // Update credit info to reflect no credits
+                setCreditInfo(prev => ({
+                    currentCredits: 0,
+                    chatCost: prev?.chatCost || 2,
+                    canChat: false,
+                    possibleChats: 0,
+                    isLowOnCredits: true,
+                    warning: prev?.warning,
+                    creditsUsed: prev?.creditsUsed,
+                    remainingCredits: prev?.remainingCredits,
+                    totalCreditsPurchased: prev?.totalCreditsPurchased,
+                    totalCreditsUsed: prev?.totalCreditsUsed,
+                    subscriptionTier: prev?.subscriptionTier,
+                    maxCredits: prev?.maxCredits,
+                    canReceiveCredits: prev?.canReceiveCredits
+                }));
+                
+                // Refund the user's message since it failed
+                setTimeout(async () => {
+                    await loadCreditInfo();
+                }, 1000);
+                
+            } else if (error.message?.includes('Authentication')) {
                 errorMessage = "There seems to be an authentication issue... Please try refreshing the page.";
             } else if (error.message?.includes('Network')) {
                 errorMessage = "There appears to be a network connectivity issue... Please check your connection and try again when convenient.";

@@ -36,6 +36,7 @@ interface RegisterDto {
     companyAddress?: string;
     industry?: string;
     companyRole: string;
+    companyId?: string;
 }
 
 interface AuthContextType {
@@ -264,10 +265,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const register = async (registerDto: RegisterDto) => {
         setIsLoading(true);
         try {
+            console.log('🔐 AuthContext: Starting registration with data:', registerDto);
             const response = await authApi.register(registerDto);
+            console.log('🔐 AuthContext: Registration response:', response);
             
             // Handle successful registration
             if (response.data && response.data.accessToken) {
+                console.log('🔐 AuthContext: Registration successful with tokens');
                 handleAuthResponse(
                     response.data.accessToken,
                     response.data.refreshToken,
@@ -275,13 +279,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 );
             } else {
                 // Registration successful but pending approval
+                console.log('🔐 AuthContext: Registration successful but pending approval');
                 if (response.data && response.data.user) {
                     setUser(response.data.user);
                     localStorage.setItem('user', JSON.stringify(response.data.user));
                 }
             }
         } catch (error) {
-            console.error('Registration failed', error);
+            console.error('🔐 AuthContext: Registration failed', error);
             throw error; // Let the component handle the specific error message
         } finally {
             setIsLoading(false);

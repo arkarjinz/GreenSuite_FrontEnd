@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { ExclamationCircleIcon, EyeIcon, EyeSlashIcon, CheckCircleIcon, ArrowLeftIcon, ArrowRightIcon } from '@heroicons/react/24/outline';
 import { companyApi } from "@/lib/api";
 import { useRouter } from "next/navigation";
+import { authApi } from "@/lib/api"; // Added import for authApi
 
 export default function RegisterForm() {
     const router = useRouter();
@@ -40,15 +41,18 @@ export default function RegisterForm() {
     // Fetch companies when query changes
     useEffect(() => {
         if (debouncedQuery.length > 2 && !isOwner) {
+            console.log('🔍 Searching companies with query:', debouncedQuery);
             setLoadingCompanies(true);
             companyApi.searchCompanies(debouncedQuery)
                 .then(data => {
+                    console.log('✅ Companies found:', data);
                     setCompanies(data);
                     setCompanySearchError('');
                 })
                 .catch(err => {
+                    console.error('❌ Company search failed:', err);
                     setCompanySearchError('Failed to search companies');
-                    console.error(err);
+                    setCompanies([]);
                 })
                 .finally(() => setLoadingCompanies(false));
         } else {
@@ -75,9 +79,111 @@ export default function RegisterForm() {
         return formData.firstName && formData.lastName && formData.userName && formData.email && formData.password;
     };
 
+    const canSubmitForm = () => {
+        if (isOwner) {
+            return formData.firstName && formData.lastName && formData.userName && formData.email && formData.password &&
+                   formData.companyName && formData.companyAddress && formData.industry;
+        } else {
+            return formData.firstName && formData.lastName && formData.userName && formData.email && formData.password &&
+                   formData.companyId && formData.companyName;
+        }
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setFormError('');
+
+        // Validate required fields
+        if (isOwner) {
+            if (!formData.companyName || !formData.companyAddress || !formData.industry) {
+                setFormError('Please fill in all required company information.');
+                return;
+            }
+        } else {
+            if (!formData.companyId || !formData.companyName) {
+                setFormError('Please select a company.');
+                return;
+            }
+        }
+
+        // Validate password requirements
+        if (formData.password.length < 8) {
+            setFormError('Password must be at least 8 characters long.');
+            return;
+        }
+
+        // Check for at least one uppercase letter, one lowercase letter, and one number
+        const hasUpperCase = /[A-Z]/.test(formData.password);
+        const hasLowerCase = /[a-z]/.test(formData.password);
+        const hasNumbers = /\d/.test(formData.password);
+        
+        if (!hasUpperCase || !hasLowerCase || !hasNumbers) {
+            setFormError('Password must contain at least one uppercase letter, one lowercase letter, and one number.');
+            return;
+        }
+
+        // Validate email format
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(formData.email)) {
+            setFormError('Please enter a valid email address.');
+            return;
+        }
+
+        // Validate username format
+        if (formData.userName.length < 3) {
+            setFormError('Username must be at least 3 characters long.');
+            return;
+        }
+
+        const usernameRegex = /^[a-zA-Z0-9_]+$/;
+        if (!usernameRegex.test(formData.userName)) {
+            setFormError('Username can only contain letters, numbers, and underscores.');
+            return;
+        }
+
+        // Validate name format
+        const nameRegex = /^[a-zA-Z\s]+$/;
+        if (!nameRegex.test(formData.firstName) || !nameRegex.test(formData.lastName)) {
+            setFormError('Names can only contain letters and spaces.');
+            return;
+        }
+
+        // Validate company name format
+        if (isOwner && (!formData.companyName || formData.companyName.trim().length === 0)) {
+            setFormError('Company name is required.');
+            return;
+        }
+
+        const companyNameRegex = /^[a-zA-Z0-9\s\-&.,]+$/;
+        if (isOwner && !companyNameRegex.test(formData.companyName)) {
+            setFormError('Company name can only contain letters, numbers, spaces, hyphens, ampersands, and periods.');
+            return;
+        }
+
+        // Validate company address and industry for OWNER role
+        if (isOwner) {
+            if (!formData.companyAddress || formData.companyAddress.trim().length === 0) {
+                setFormError('Company address is required.');
+                return;
+            }
+
+            if (!formData.industry || formData.industry.trim().length === 0) {
+                setFormError('Industry is required.');
+                return;
+            }
+
+            const addressRegex = /^[a-zA-Z0-9\s\-&.,#]+$/;
+            if (!addressRegex.test(formData.companyAddress)) {
+                setFormError('Company address can only contain letters, numbers, spaces, hyphens, ampersands, periods, and hash symbols.');
+                return;
+            }
+
+            const industryRegex = /^[a-zA-Z\s\-&]+$/;
+            if (!industryRegex.test(formData.industry)) {
+                setFormError('Industry can only contain letters, spaces, hyphens, and ampersands.');
+                return;
+            }
+        }
 
         const payload = {
             firstName: formData.firstName,
@@ -86,19 +192,88 @@ export default function RegisterForm() {
             email: formData.email,
             password: formData.password,
             companyRole: formData.companyRole,
-            companyId: formData.companyId,
             companyName: formData.companyName,
-            companyAddress: isOwner ? formData.companyAddress : undefined,
-            industry: formData.industry
+            ...(isOwner ? {
+                companyAddress: formData.companyAddress,
+                industry: formData.industry
+            } : {
+                companyId: formData.companyId
+            })
         };
 
+        // Final validation - ensure no undefined values
+        const hasUndefinedValues = Object.values(payload).some(value => value === undefined);
+        if (hasUndefinedValues) {
+            console.error('❌ Payload contains undefined values:', payload);
+            setFormError('Please fill in all required fields.');
+            return;
+        }
+
+        // Check for empty strings
+        const hasEmptyStrings = Object.entries(payload).some(([key, value]) => {
+            if (typeof value === 'string') {
+                return value.trim().length === 0;
+            }
+            return false;
+        });
+        
+        if (hasEmptyStrings) {
+            console.error('❌ Payload contains empty strings:', payload);
+            setFormError('Please fill in all required fields.');
+            return;
+        }
+
+        // Test JSON serialization
         try {
+            JSON.stringify(payload);
+        } catch (error) {
+            console.error('❌ Payload cannot be serialized to JSON:', error);
+            setFormError('Invalid form data. Please try again.');
+            return;
+        }
+
+        console.log('📝 Registration payload:', payload);
+        console.log('🔍 Is owner:', isOwner);
+        console.log('🔍 Company role:', formData.companyRole);
+            
+        try {
+            // Test backend connectivity first
+            console.log('🏥 Testing backend connectivity before registration...');
+            const isBackendReachable = await authApi.healthCheck();
+            
+            if (!isBackendReachable) {
+                setFormError('Unable to connect to the server. Please check your internet connection and try again.');
+                return;
+            }
+            
+            // Test backend port
+            console.log('🔍 Testing backend port...');
+            const portTest = await authApi.testBackendPort();
+            if (!portTest.isRunning) {
+                setFormError(`Backend is not running on port ${portTest.port}. Please ensure the backend server is started.`);
+                return;
+            }
+            
+            // Test if backend is Spring Boot
+            console.log('🔍 Testing if backend is Spring Boot...');
+            const springBootTest = await authApi.testSpringBootBackend();
+            if (!springBootTest.isSpringBoot) {
+                console.warn('⚠️ Backend might not be a Spring Boot application:', springBootTest.details);
+                // Don't fail here, just log a warning
+            } else {
+                console.log('✅ Backend is confirmed to be Spring Boot');
+            }
+            
             await register(payload);
             router.push('/pending');
         } catch (error) {
+            console.error('❌ Registration error in form:', error);
             if (error instanceof Error) {
+                console.error('❌ Error message:', error.message);
+                console.error('❌ Error stack:', error.stack);
                 setFormError(error.message);
             } else {
+                console.error('❌ Unknown error type:', typeof error);
                 setFormError('Registration failed. Please try again.');
             }
         }
@@ -270,6 +445,7 @@ export default function RegisterForm() {
                                 onChange={handleChange}
                                 className="w-full px-2.5 py-2 bg-gray-50/50 border border-gray-200 rounded-lg text-gray-900 focus:outline-none focus:ring-1 focus:ring-emerald-400/50 focus:border-emerald-400 focus:bg-white transition-all duration-200 text-xs"
                             >
+                                {/* Role enum values must match backend: OWNER, MANAGER, EMPLOYEE */}
                                 <option value="OWNER">Owner</option>
                                 <option value="MANAGER">Manager</option>
                                 <option value="EMPLOYEE">Employee</option>
@@ -353,6 +529,22 @@ export default function RegisterForm() {
                                 </div>
 
                                 <div>
+                                    <label htmlFor="companyAddress" className="block text-xs font-medium text-gray-700 mb-1">
+                                        Company Address
+                                    </label>
+                                    <input
+                                        id="companyAddress"
+                                        name="companyAddress"
+                                        type="text"
+                                        value={formData.companyAddress}
+                                        onChange={handleChange}
+                                        required
+                                        className="w-full px-2.5 py-2 bg-gray-50/50 border border-gray-200 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-emerald-400/50 focus:border-emerald-400 focus:bg-white transition-all duration-200 text-xs"
+                                        placeholder="123 Main St, City, State, ZIP"
+                                    />
+                                </div>
+
+                                <div>
                                     <label htmlFor="industry" className="block text-xs font-medium text-gray-700 mb-1">
                                         Industry
                                     </label>
@@ -363,7 +555,7 @@ export default function RegisterForm() {
                                         value={formData.industry}
                                         onChange={handleChange}
                                         required
-                                        className="w-full px-2.5 py-2 bg-gray-50/50 border border-gray-200 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-emerald-400/50 focus:border-emerald-400 focus:bg-white transition-all duration-200 text-xs"
+                                        className="w-full px-2.5 py-2 bg-gray-50/50 border border-gray-200 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-emerald-400 focus:border-emerald-400 focus:bg-white transition-all duration-200 text-xs"
                                         placeholder="e.g., Technology, Manufacturing"
                                     />
                                 </div>
@@ -382,7 +574,7 @@ export default function RegisterForm() {
 
                             <button
                                 type="submit"
-                                disabled={isLoading}
+                                disabled={isLoading || !canSubmitForm()}
                                 className="flex-1 py-2.5 px-3 bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white font-semibold rounded-lg transition-all duration-200 transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none shadow-lg hover:shadow-xl flex items-center justify-center text-sm"
                             >
                                 {isLoading ? (
