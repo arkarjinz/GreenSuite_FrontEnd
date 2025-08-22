@@ -134,9 +134,23 @@ export const authApi = {
             errors.push('Invalid email format');
         }
         
-        // Check password length
-        if (payload.password && payload.password.length < 8) {
-            errors.push('Password must be at least 8 characters long');
+        // Check password requirements (matching backend validation)
+        if (payload.password) {
+            if (payload.password.length < 10) {
+                errors.push('Password must be at least 10 characters long');
+            }
+            if (!/(?=.*[a-z])/.test(payload.password)) {
+                errors.push('Password must contain at least one lowercase letter');
+            }
+            if (!/(?=.*[A-Z])/.test(payload.password)) {
+                errors.push('Password must contain at least one uppercase letter');
+            }
+            if (!/(?=.*\d)/.test(payload.password)) {
+                errors.push('Password must contain at least one digit');
+            }
+            if (!/(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?])/.test(payload.password)) {
+                errors.push('Password must contain at least one special character');
+            }
         }
         
         // Check role-specific requirements
@@ -147,11 +161,8 @@ export const authApi = {
             if (!payload.industry || payload.industry.trim().length === 0) {
                 errors.push('Industry is required for owners');
             }
-        } else {
-            if (!payload.companyId || payload.companyId.trim().length === 0) {
-                errors.push('Company selection is required for non-owners');
-            }
         }
+        // Note: companyId is not required for non-owners as the backend handles company selection differently
         
         return {
             isValid: errors.length === 0,
@@ -171,7 +182,27 @@ export const authApi = {
                 throw new Error(`Registration validation failed: ${validation.errors.join(', ')}`);
             }
             
-        const response = await axiosInstance.post('/api/auth/register', registerDto);
+            // Clean the payload to match backend expectations
+            const cleanPayload: { [key: string]: any } = {
+                firstName: registerDto.firstName,
+                lastName: registerDto.lastName,
+                userName: registerDto.userName,
+                email: registerDto.email,
+                password: registerDto.password,
+                companyRole: registerDto.companyRole,
+                companyName: registerDto.companyName,
+                companyAddress: registerDto.companyAddress,
+                industry: registerDto.industry
+            };
+            
+            // Remove undefined/null values
+            Object.keys(cleanPayload).forEach(key => {
+                if (cleanPayload[key] === undefined || cleanPayload[key] === null || cleanPayload[key] === '') {
+                    delete cleanPayload[key];
+                }
+            });
+            
+        const response = await axiosInstance.post('/api/auth/register', cleanPayload);
             console.log('✅ Registration successful:', response.data);
         return response.data;
         } catch (error: any) {
@@ -183,7 +214,9 @@ export const authApi = {
             // Extract error message from response
             let errorMessage = 'Registration failed. Please try again.';
             
-            if (error.response?.data) {
+            if (error.response?.status === 500) {
+                errorMessage = 'Server error occurred. Please check if the backend is running and try again.';
+            } else if (error.response?.data) {
                 const backendError = error.response.data;
                 if (backendError.message) {
                     errorMessage = backendError.message;

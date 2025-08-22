@@ -64,20 +64,9 @@ export default function PendingPage() {
     }
 
     return (
-        <div className="min-h-screen bg-white relative">
-            {/* Subtle green background shapes */}
-            <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                <div className="absolute top-20 left-10 w-32 h-32 bg-green-100/30 rounded-full blur-3xl"></div>
-                <div className="absolute bottom-20 right-10 w-24 h-24 bg-emerald-100/40 rounded-full blur-2xl"></div>
-                <div className="absolute top-1/2 left-1/4 w-16 h-16 bg-green-200/20 rounded-full blur-xl"></div>
-                <div className="absolute top-1/3 right-1/3 w-8 h-8 bg-emerald-300/30 rounded-full blur-lg"></div>
-                <div className="absolute bottom-1/3 left-1/2 w-12 h-12 bg-green-100/25 rounded-full blur-2xl"></div>
-            </div>
-
-            {/* Full page content */}
-            <div className="relative z-10 min-h-screen flex flex-col justify-center items-center p-4 md:p-8 animate-fade-in">
-                {/* Status Card - Full width on mobile, centered on desktop */}
-                <div className="w-full max-w-2xl bg-white rounded-2xl shadow-lg border border-gray-100 p-4 md:p-6 lg:p-8 animate-slide-up">
+        <div className="w-full">
+            {/* Status Card - Full width on mobile, centered on desktop */}
+            <div className="w-full max-w-2xl bg-white rounded-2xl shadow-lg border border-gray-100 p-4 md:p-6 lg:p-8 animate-slide-up">
                             {/* Header with status icon */}
                             <div className="text-center mb-6">
                         <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
@@ -205,9 +194,7 @@ export default function PendingPage() {
                                 </p>
                             </div>
                         </div>
-                    </div>
                 </div>
+        
     );
 }
-
-

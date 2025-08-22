@@ -19,6 +19,8 @@ interface AuthUser {
     aiCredits?: number;
     canChat?: boolean;
     isLowOnCredits?: boolean;
+    remainingAttempts?: number;
+    warning?: boolean;
 }
 
 interface LoginDto {
