@@ -156,11 +156,11 @@ const AuthenticatedNav = ({ user, logout }: { user: AuthUser | null; logout: () 
             <NavLink href="/ai-chat" icon={ChatBubbleLeftRightIcon}>AI Assistant</NavLink>
             <NavLink href="/credits" icon={CreditCardIcon}>Credits</NavLink>
             {/* Combined carbon calculator routes */}
-            <NavLink href="/carbon" icon={CalculatorIcon}>Carbon Calculator</NavLink>
-            <NavLink href="/resource/input" icon={CalculatorIcon}>Resource Input</NavLink>
+            <NavLink href="/resource/input" icon={CalculatorIcon}>Carbon Calculator</NavLink>
+            
             <NavLink href="/resource/goal" icon={DocumentChartBarIcon}>Goal Track</NavLink>
             {/* Combined reports routes */}
-            <NavLink href="/reports" icon={DocumentChartBarIcon}>Reports</NavLink>
+           
             <NavLink href="/report" icon={DocumentChartBarIcon}>Report</NavLink>
             {user?.companyRole === 'OWNER' && (
                 <>
