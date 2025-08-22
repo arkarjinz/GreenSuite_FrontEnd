@@ -9,6 +9,7 @@ import Button from "@/components/ui/Button";
 import { calculateFootprint } from '@/lib/api/carbon';
 import { getSubmittedResourceMonths } from "@/lib/api/carbon";
 import { Loading } from '@/components/ui/Loading';
+import { useAuth } from '@/contexts/AuthContext'; // Add this import
 // Add these types to match your Java enums
 
 
@@ -55,9 +56,11 @@ const activityFieldMap: Record<ActivityType, keyof FormData> = {
 } as const;
   const ResourceForm: React.FC = () => {
     const router = useRouter();
+    const { isAuthenticated, user, logout } = useAuth(); // Add this
     const currentYear = getCurrentYear();
   const [isRedirecting, setIsRedirecting] = useState(false);
-    const [formData, setFormData] = useState<FormData>({
+    const [error, setError] = useState<string | null>(null);
+  const [formData, setFormData] = useState<FormData>({
     electricity: "",
     water: "",
     fuel: "",
@@ -77,7 +80,13 @@ const activityFieldMap: Record<ActivityType, keyof FormData> = {
 // Fetch submitted months whenever the year changes - similar to goalform.tsx
   
 useEffect(() => {
-    async function fetchSubmittedResourceMonths() {
+    //to check user is authenticated or not
+  async function fetchSubmittedResourceMonths() {
+      if (!isAuthenticated) {
+        setSubmittedMonths([]);
+        return;
+      }
+
       try {
         const months = await getSubmittedResourceMonths(parseInt(formData.year));
         console.log("Submitted resource months for year", formData.year, ":", months);
@@ -103,7 +112,7 @@ useEffect(() => {
       }
     }
     fetchSubmittedResourceMonths();
-  }, [formData.year]);
+  }, [formData.year,isAuthenticated]);
   // Add this useEffect hook after your existing useEffect for fetching submitted months
 
 useEffect(() => {
@@ -203,6 +212,12 @@ const handleUndo = () => {
   }
 };//*///end of handlesubmit(old)
 const handleSubmit = async () => {
+  if (isSubmitting) return;
+    if (!isAuthenticated || !user) {
+      setError("Please log in to submit data");
+      setTimeout(() => router.push("/login"), 1500);
+      return;
+    }
   setIsSubmitting(true);
   setIsRedirecting(true); // Show loading state
 
@@ -262,8 +277,20 @@ const handleSubmit = async () => {
     console.log("Calculation result:", result);
 // Redirect to results page with parameters
     router.push(`/results/${numericMonth}/${formData.year}?region=${formData.region}`);
-  } catch (error) {
+  } catch (error:any) {
     console.error("API Error:", error);
+    // Handle authentication errors
+    if (error.message.includes('Unauthorized') || 
+        error.message.includes('not authenticated') ||
+        error.message.includes('Session expired')) {
+      setError('Your session has expired. Please login again.');
+      setTimeout(() => {
+        logout();
+        router.push('/login');
+      }, 2000);
+    } else {
+      setError(error.message || 'Calculation failed. Please try again.');
+    }
   setIsRedirecting(false);
   } finally {
     setIsSubmitting(false);
@@ -274,6 +301,12 @@ const handleSubmit = async () => {
   return (
     <>
     {isRedirecting && <Loading />}
+     {/* Add this error display */}
+    {error && (
+      <div className="fixed top-4 left-1/2 transform -translate-x-1/2 bg-red-100 border border-red-400 text-red-700 px-6 py-3 rounded-lg mb-4 z-50 max-w-md mx-auto">
+        {error}
+      </div>
+    )}
     <div className="max-w-[900px] mx-auto p-8 font-poppins">
       {/* Top bar */}
       <div className="flex justify-between items-center mb-8">

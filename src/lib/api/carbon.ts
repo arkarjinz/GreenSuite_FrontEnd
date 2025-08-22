@@ -1,55 +1,50 @@
-/*export const calculateFootprint = async (data: {
-  activityType: string;
-  value: number;
-  region: string;
-  month: string;
-  fuelType?: string;
-  unit?: string;
-  disposalMethod?: string;
-}) => {
-  try {
-    // Get token from localStorage directly here
-    const token = localStorage.getItem("token");
-    console.log("Using Auth token:", token);
-
-    const response = await fetch("http://localhost:8080/api/carbon/calculate", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        ...(token && { Authorization: `Bearer ${token}` }),
-      },
-      body: JSON.stringify({
-        ...data,
-        activityType: data.activityType.toUpperCase(),
-        month: data.month.toUpperCase(),
-        region: data.region.toUpperCase(),
-        fuelType: data.fuelType?.toUpperCase(),
-        unit: data.unit?.toUpperCase(),
-        disposalMethod: data.disposalMethod?.toUpperCase()
-      }),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      console.error('Calculation failed with status:', response.status, errorData);
-      throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
-    }
-
-    const result = await response.json();
-    console.log('Calculation successful:', result);
-    return result as number;
-  } catch (error) {
-    console.error('API call failed:', error);
-    throw new Error(`Calculation failed: ${error instanceof Error ? error.message : String(error)}`);
-  }
-};*/
 import type { CarbonInput } from "@/types/carbon";
+// Helper function to safely access localStorage only on client side
+const getLocalStorageItem = (key: string): string | null => {
+  // Check if we're in a browser environment
+  if (typeof window === 'undefined') {
+    return null;
+  }
+  try {
+    return localStorage.getItem(key);
+  } catch (error) {
+    console.error('Error accessing localStorage:', error);
+    return null;
+  }
+};
+
+// Add this helper function at the very top of carbon.ts
+const getUserData = () => {
+  const userStr = localStorage.getItem('user');
+  if (!userStr) return null;
+  try {
+    return JSON.parse(userStr);
+  } catch {
+    return null;
+  }
+};
+// Add this function to check if user is authenticated
+const isAuthenticated = (): boolean => {
+  const token = getLocalStorageItem('accessToken');
+  const userData = getUserData();
+  return !!token && !!userData?.id;
+};
 
 export const calculateFootprint = async (data: CarbonInput[]) => {
   try {
-    const token = localStorage.getItem("token");
+    // Check authentication first
+    if (!isAuthenticated()) {
+      throw new Error('User not authenticated. Please login again.');
+    }
+    // Changed from "token" to "accessToken" to match your auth system
+    //const token = localStorage.getItem("accessToken");
+ const token=getLocalStorageItem("accessToken");
+    const userData = getUserData(); // Get user data
+    console.log("Token exists:", !!token);
+    console.log("User data:", userData);
+    console.log("Request data:", data);
 
-    const response = await fetch("http://localhost:8080/api/carbon/calculate", {
+ const response = await fetch("http://localhost:8080/api/carbon/calculate", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -57,8 +52,10 @@ export const calculateFootprint = async (data: CarbonInput[]) => {
       },
       body: JSON.stringify(data.map(input => ({
         ...input,
-        userId: localStorage.getItem("userId"), 
-        activityType: input.activityType.toUpperCase(),
+        //userId: localStorage.getItem("userId"), 
+         userId: userData?.id, // FIXED: Get from userData, not localStorage
+        companyId: userData?.companyId, // FIXED: Get from userData, not localStorage
+         activityType: input.activityType.toUpperCase(),
         month: input.month?.toUpperCase(),
         region: input.region?.toUpperCase(),
         fuelType: input.fuelType?.toUpperCase(),
@@ -66,31 +63,54 @@ export const calculateFootprint = async (data: CarbonInput[]) => {
         disposalMethod: input.disposalMethod?.toUpperCase(),
       }))),
     });
-
-    if (!response.ok) {
+console.log("Response status:", response.status);
+   // Handle 401 Unauthorized specifically
+    if (response.status === 401) {
+      // Clear invalid auth data
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+      }
+      throw new Error('Session expired. Please login again.');
+    }
+if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
     }
 
     const result = await response.json();
-    return result as number; // or a different type if your backend sends more info
+    return result as number;
   } catch (error) {
     throw new Error(`Calculation failed: ${error instanceof Error ? error.message : String(error)}`);
   }
 };
-//Add this new function to get submitted resource months
+
+// Add this new function to get submitted resource months
 export const getSubmittedResourceMonths = async (year: number): Promise<string[]> => {
   try {
-    const token = localStorage.getItem("token");
-    const companyId = localStorage.getItem("companyId");
-    
+    // Changed from "token" to "accessToken"
+    const token = getLocalStorageItem("accessToken");
+    //const companyId = localStorage.getItem("companyId");
+    const userData = getUserData();
+    const companyId = userData?.companyId;
+    // ✅ ADD THIS CHECK - If no token, return empty array instead of error
+    if (!token) {
+      console.log("No authentication token available, returning empty months array");
+      return [];
+    }
+
+    // ✅ ADD THIS CHECK - If no companyId, return empty array
+    if (!companyId) {
+      console.log("No company ID available, returning empty months array");
+      return [];
+    }
     console.log("Fetching submitted resource months for year:", year);
 
     const response = await fetch(`http://localhost:8080/api/carbon/submitted-months?year=${year}&companyId=${companyId}`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
-        ...(token && { Authorization: `Bearer ${token}` }),
+        Authorization: `Bearer ${token}` ,
       },
     });
 
@@ -101,16 +121,12 @@ export const getSubmittedResourceMonths = async (year: number): Promise<string[]
 
     const result = await response.json();
     console.log("Submitted resource months response:", result);
-// Assuming the backend returns an array of month strings like ["01", "03", "07"]
-    // or full date strings like ["2025-01", "2025-03"] that you need to extract months from
     return result as string[];
     
   } catch (error) {
-    console.error("Failed to fetch submitted resource months:", error);
-    throw new Error(`Failed to get submitted months: ${error instanceof Error ? error.message : String(error)}`);
+     return [];
   }
 };
-// ===== NEW FUNCTIONS FOR EDIT FUNCTIONALITY =====
 
 // Type definitions for edit functionality
 export interface GetResourceDataParams {
@@ -137,6 +153,7 @@ export interface UpdateFootprintParams {
   year: string;
   region: string;
 }
+
 /**
  * Fetch existing resource data for a specific month/year/region for editing
  */
@@ -144,9 +161,12 @@ export const getResourceDataForMonth = async (
   params: GetResourceDataParams
 ): Promise<ExistingResourceData | null> => {
   try {
-    const token = localStorage.getItem("token");
-    const companyId = localStorage.getItem("companyId");
-    
+    // Changed from "token" to "accessToken"
+   // const token = localStorage.getItem("accessToken");
+    const token=getLocalStorageItem("accessToken");
+   //const companyId = localStorage.getItem("companyId");
+    const userData = getUserData();
+const companyId = userData?.companyId;
     console.log("Fetching resource data for editing:", params);
 
     const queryParams = new URLSearchParams({
@@ -167,7 +187,7 @@ export const getResourceDataForMonth = async (
     if (!response.ok) {
       if (response.status === 404) {
         console.log("No existing data found for this period");
-        return null; // No data found for this period
+        return null;
       }
       const errorData = await response.json().catch(() => ({}));
       throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
@@ -185,62 +205,15 @@ export const getResourceDataForMonth = async (
 /**
  * Update existing footprint data
  */
-/*export const updateFootprint = async (
-  inputs: CarbonInput[],
-  params: UpdateFootprintParams
-): Promise<any> => {
-  try {
-    const token = localStorage.getItem("token");
-    const companyId = localStorage.getItem("companyId");
-    
-    console.log("Updating footprint data:", { inputs, params });
-
-    const response = await fetch('http://localhost:8080/api/carbon/update', {
-      method: 'PUT', // Use PUT for updates
-      headers: {
-        'Content-Type': 'application/json',
-        ...(token && { Authorization: `Bearer ${token}` }),
-      },
-      body: JSON.stringify({
-        inputs: inputs.map(input => ({
-          ...input,
-          userId: localStorage.getItem("userId"),
-          companyId: companyId,
-          activityType: input.activityType.toUpperCase(),
-          month: input.month?.toUpperCase(),
-          region: input.region?.toUpperCase(),
-          fuelType: input.fuelType?.toUpperCase(),
-          unit: input.unit?.toUpperCase(),
-          disposalMethod: input.disposalMethod?.toUpperCase(),
-        })),
-        month: params.month.toUpperCase(),
-        year: params.year,
-        region: params.region.toUpperCase(),
-      }),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      console.error('Update failed with status:', response.status, errorData);
-      throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
-    }
-
-    const result = await response.json();
-    console.log('Update successful:', result);
-    return result;
-  } catch (error) {
-    console.error('Error updating footprint:', error);
-    throw new Error(`Update failed: ${error instanceof Error ? error.message : String(error)}`);
-  }
-};*/
 export const updateFootprint = async (
   inputs: CarbonInput[],
   params: UpdateFootprintParams
 ): Promise<any> => {
   try {
-    const token = localStorage.getItem("token");
-    
-    // Create query parameters
+    // Changed from "token" to "accessToken"
+    //const token = localStorage.getItem("accessToken");
+     const token=getLocalStorageItem("accessToken");
+    const userData = getUserData(); // Get user data
     const queryParams = new URLSearchParams({
       month: params.month.toUpperCase(),
       year: params.year,
@@ -255,11 +228,12 @@ export const updateFootprint = async (
           'Content-Type': 'application/json',
           ...(token && { Authorization: `Bearer ${token}` }),
         },
-        // Send JUST the array in body
         body: JSON.stringify(inputs.map(input => ({
           ...input,
-          userId: localStorage.getItem("userId"),
-          companyId: localStorage.getItem("companyId"),
+          //userId: localStorage.getItem("userId"),
+          //companyId: localStorage.getItem("companyId"),
+           userId: userData?.id, // FIXED: Get from userData
+          companyId: userData?.companyId, // FIXED: Get from userData
           activityType: input.activityType.toUpperCase(),
           month: input.month?.toUpperCase(),
           region: input.region?.toUpperCase(),
@@ -280,19 +254,15 @@ export const updateFootprint = async (
     throw new Error(`Update failed: ${error instanceof Error ? error.message : String(error)}`);
   }
 };
-//to show result for calculated footprint
-/*export const getChartData = async (month: string, year: string, region: string) => {
-  const response = await fetch(`/api/carbon/chart-data?month=${month}&year=${year}&region=${region}`);
-  if (!response.ok) throw new Error('Failed to fetch chart data');
-  return await response.json();
-};*/
-// Add this to your carbon.ts file (replace the existing getChartData function)
 
 export const getChartData = async (month: string, year: string, region: string) => {
   try {
-    const token = localStorage.getItem("token");
-    const companyId = localStorage.getItem("companyId");
-    
+    // Changed from "token" to "accessToken"
+    //const token = localStorage.getItem("accessToken");
+    const token=getLocalStorageItem("accessToken");
+    //const companyId = localStorage.getItem("companyId");
+    const userData = getUserData();
+const companyId = userData?.companyId;
     console.log("Fetching chart data for:", { month, year, region });
 
     const queryParams = new URLSearchParams({

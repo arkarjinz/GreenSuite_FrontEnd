@@ -16,6 +16,9 @@ interface AuthUser {
     approvalStatus: 'PENDING' | 'APPROVED' | 'REJECTED';
     rejectionCount?: number;
     isBanned?: boolean;
+    aiCredits?: number;
+    canChat?: boolean;
+    isLowOnCredits?: boolean;
 }
 
 interface LoginDto {
@@ -33,6 +36,7 @@ interface RegisterDto {
     companyAddress?: string;
     industry?: string;
     companyRole: string;
+    companyId?: string;
 }
 
 interface AuthContextType {
@@ -43,6 +47,7 @@ interface AuthContextType {
     login: (loginDto: LoginDto) => Promise<{ success: boolean; status?: string; message?: string }>;
     register: (registerDto: RegisterDto) => Promise<void>;
     logout: () => void;
+    updateUser: (updatedUser: AuthUser) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -53,6 +58,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const [isLoading, setIsLoading] = useState(false);
     const [isInitialized, setIsInitialized] = useState(false);
     const router = useRouter();
+
+    // Update user function
+    const updateUser = useCallback((updatedUser: AuthUser) => {
+        setUser(updatedUser);
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+    }, []);
 
     // Logout function
     const logout = useCallback(() => {
@@ -254,10 +265,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const register = async (registerDto: RegisterDto) => {
         setIsLoading(true);
         try {
+            console.log('🔐 AuthContext: Starting registration with data:', registerDto);
             const response = await authApi.register(registerDto);
+            console.log('🔐 AuthContext: Registration response:', response);
             
             // Handle successful registration
             if (response.data && response.data.accessToken) {
+                console.log('🔐 AuthContext: Registration successful with tokens');
                 handleAuthResponse(
                     response.data.accessToken,
                     response.data.refreshToken,
@@ -265,13 +279,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 );
             } else {
                 // Registration successful but pending approval
+                console.log('🔐 AuthContext: Registration successful but pending approval');
                 if (response.data && response.data.user) {
                     setUser(response.data.user);
                     localStorage.setItem('user', JSON.stringify(response.data.user));
                 }
             }
         } catch (error) {
-            console.error('Registration failed', error);
+            console.error('🔐 AuthContext: Registration failed', error);
             throw error; // Let the component handle the specific error message
         } finally {
             setIsLoading(false);
@@ -287,7 +302,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 isLoading,
                 login,
                 register,
-                logout
+                logout,
+                updateUser
             }}
         >
             {children}
