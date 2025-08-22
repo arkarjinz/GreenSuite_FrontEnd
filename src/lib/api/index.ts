@@ -205,7 +205,10 @@ export const authApi = {
                 url: `${API_BASE_URL}/api/auth/login` 
             });
             
-            const response = await axiosInstance.post('/api/auth/login', loginDto);
+            // Use a longer timeout for login requests
+            const response = await axiosInstance.post('/api/auth/login', loginDto, {
+                timeout: 60000 // 60 seconds for login
+            });
             console.log('✅ Login response received:', {
                 status: response.status,
                 headers: response.headers,
@@ -259,7 +262,8 @@ export const authApi = {
                 statusText: error.response?.statusText,
                 data: error.response?.data,
                 url: error.config?.url,
-                baseURL: error.config?.baseURL
+                baseURL: error.config?.baseURL,
+                code: error.code
             });
             
             // Handle specific error responses
@@ -271,6 +275,8 @@ export const authApi = {
                 throw new Error('Login endpoint not found - check if backend is running');
             } else if (error.code === 'NETWORK_ERROR' || error.message.includes('Network Error')) {
                 throw new Error('Cannot connect to backend - make sure Spring Boot server is running on port 8080');
+            } else if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
+                throw new Error('Login request timed out. Please check your connection and try again.');
             } else if (error.response?.data?.message) {
                 throw new Error(error.response.data.message);
             } else {
