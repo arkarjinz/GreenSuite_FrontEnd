@@ -26,10 +26,7 @@ const Navbar = () => {
     const [isClient, setIsClient] = useState(false);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [scrolled, setScrolled] = useState(false);
-// ✅ ADD THESE ROLE HELPER FUNCTIONS by thu to make the role based access to pages
-    const isOwner = (user: AuthUser | null) => user?.companyRole === 'OWNER';
-    const isManagerOrEmployee = (user: AuthUser | null) => 
-        ['MANAGER', 'EMPLOYEE'].includes(user?.companyRole || '');
+
     // Set isClient to true after component mounts
     useEffect(() => {
         setIsClient(true);
@@ -159,13 +156,12 @@ const AuthenticatedNav = ({ user, logout }: { user: AuthUser | null; logout: () 
             <NavLink href="/ai-chat" icon={ChatBubbleLeftRightIcon}>AI Assistant</NavLink>
             <NavLink href="/credits" icon={CreditCardIcon}>Credits</NavLink>
             {/* Combined carbon calculator routes */}
-            {/* 🔒 RESTRICT Carbon Calculator to OWNER only */}
-            {isOwner(user) && (
+        {user?.companyRole === 'OWNER' && (
             <NavLink href="/resource/input" icon={CalculatorIcon}>Carbon Calculator</NavLink>)}
-            {/* 🔒 RESTRICT Goal Track to OWNER only */}
-            {isOwner(user) && (
+
+            {user?.companyRole === 'OWNER' && (
             <NavLink href="/resource/goal" icon={DocumentChartBarIcon}>Goal Track</NavLink>)}
-            {/* Combined reports routes */}
+            
            
             <NavLink href="/report" icon={DocumentChartBarIcon}>Report</NavLink>
             {user?.companyRole === 'OWNER' && (
@@ -249,10 +245,11 @@ const MobileAuthenticatedNav = ({ user, logout, onClose }: { user: AuthUser | nu
             <MobileNavLink href="/ai-chat/landing" icon={SparklesIcon} onClick={onClose}>Meet Rin</MobileNavLink>
             <MobileNavLink href="/ai-chat" icon={ChatBubbleLeftRightIcon} onClick={onClose}>AI Assistant</MobileNavLink>
             <MobileNavLink href="/credits" icon={CreditCardIcon} onClick={onClose}>Credits</MobileNavLink>
-            <MobileNavLink href="/carbon" icon={CalculatorIcon} onClick={onClose}>Carbon Calculator</MobileNavLink>
-            <MobileNavLink href="/resource/input" icon={CalculatorIcon} onClick={onClose}>Resource Input</MobileNavLink>
-            <MobileNavLink href="/resource/goal" icon={DocumentChartBarIcon} onClick={onClose}>Goal Track</MobileNavLink>
-            <MobileNavLink href="/reports" icon={DocumentChartBarIcon} onClick={onClose}>Reports</MobileNavLink>
+            {user?.companyRole === 'OWNER' && (
+            <MobileNavLink href="/resource/input" icon={CalculatorIcon} onClick={onClose}>Carbon Calculator</MobileNavLink>)}
+            {user?.companyRole === 'OWNER' && (
+            <MobileNavLink href="/resource/goal" icon={DocumentChartBarIcon} onClick={onClose}>Goal Track</MobileNavLink>)}
+            <MobileNavLink href="/report" icon={DocumentChartBarIcon} onClick={onClose}>Reports</MobileNavLink>
             {user?.companyRole === 'OWNER' && (
                 <>
                     <MobileNavLink href="/dashboard/owner/users" icon={UsersIcon} onClick={onClose}>Manage Users</MobileNavLink>

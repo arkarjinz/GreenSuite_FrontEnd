@@ -7,6 +7,7 @@ import type { CarbonGoal } from '@/types/goalreport';
 import { fetchGoalData } from '@/lib/api/goalreport';
 import Link from 'next/link';
 import { Download } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 
 import { useRouter } from 'next/navigation';
 import { 
@@ -27,7 +28,9 @@ import {
 } from 'lucide-react';
 import { Loading } from '@/components/ui/Loading'; // Import the Loading component
 
+
 const ReportTable = () => {
+  const { user } = useAuth();
   const [data, setData] = useState<CarbonActivity[]>([]);
   const [loading, setLoading] = useState(true);
   const [goals, setGoals] = useState<CarbonGoal[]>([]);
@@ -376,7 +379,7 @@ const sortGoalsByDate = (goals: CarbonGoal[]) => {
                         )}*/}
 
   <div className="flex gap-2">
-    {showEditButton && (
+    {showEditButton && user?.companyRole!=='EMPLOYEE' && (
       <button
         onClick={() => handleEditResource(activity.month, activity.year, activity.region)}
         className="inline-flex items-center gap-1 bg-green-600 text-white px-3 py-2 rounded-[20px] text-sm font-medium hover:bg-green-700 transition-colors duration-200 shadow-md hover:shadow-lg"
@@ -536,6 +539,7 @@ const sortGoalsByDate = (goals: CarbonGoal[]) => {
                       {goal.updatedAt ? new Date(goal.updatedAt).toLocaleString() : '-'}
                     </td>
                     <td className="px-4 py-4">
+                      {user?.companyRole!='EMPLOYEE' &&(
                       <button
                         onClick={() => handleEditGoal(goal.id.toString())}
                         className="inline-flex items-center gap-1 bg-green-600 text-white px-3 py-2 rounded-[20px] text-sm font-medium hover:bg-purple-700 transition-colors duration-200 shadow-md hover:shadow-lg"
@@ -543,6 +547,7 @@ const sortGoalsByDate = (goals: CarbonGoal[]) => {
                         <Edit size={14} />
                         Edit Goal
                       </button>
+                      )}
                     </td>
                   </tr>
                 ))}
