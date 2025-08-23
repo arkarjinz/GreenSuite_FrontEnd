@@ -116,7 +116,7 @@ const downloadActivitiesCSV = (month: string, year: string, region: string) => {
   document.body.removeChild(link);
 };
 // Add this function after your getActivityIcon function
-const sortActivitiesByDate = (activities: CarbonActivity[]) => {
+/*const sortActivitiesByDate = (activities: CarbonActivity[]) => {
   // Create a map of month names to their numeric values
   const monthMap: Record<string, number> = {
     January: 1, February: 2, March: 3, April: 4,
@@ -133,6 +133,7 @@ const sortActivitiesByDate = (activities: CarbonActivity[]) => {
     return monthMap[a.month] - monthMap[b.month];
   });
 };
+
 // Add this right after your sortActivitiesByDate function
 const sortGoalsByDate = (goals: CarbonGoal[]) => {
   const monthMap: Record<string, number> = {
@@ -148,6 +149,66 @@ const sortGoalsByDate = (goals: CarbonGoal[]) => {
     }
     // If same year, compare months
     return monthMap[a.month] - monthMap[b.month];
+  });
+};*/
+// Update your sortActivitiesByDate function:
+const sortActivitiesByDate = (activities: CarbonActivity[]) => {
+  // Create a map of month names to their numeric values (case-insensitive)
+  const monthMap: Record<string, number> = {
+    january: 1, february: 2, march: 3, april: 4,
+    may: 5, june: 6, july: 7, august: 8,
+    september: 9, october: 10, november: 11, december: 12,
+    // Add uppercase versions too
+    JANUARY: 1, FEBRUARY: 2, MARCH: 3, APRIL: 4,
+    MAY: 5, JUNE: 6, JULY: 7, AUGUST: 8,
+    SEPTEMBER: 9, OCTOBER: 10, NOVEMBER: 11, DECEMBER: 12
+  };
+
+  return [...activities].sort((a, b) => {
+    // First compare years
+    const yearA = parseInt(a.year);
+    const yearB = parseInt(b.year);
+    
+    if (yearA !== yearB) {
+      return yearA - yearB; // Ascending order (older years first)
+    }
+    
+    // If same year, compare months (convert to lowercase for consistency)
+    const monthA = monthMap[a.month.toLowerCase()] || 0;
+    const monthB = monthMap[b.month.toLowerCase()] || 0;
+    
+    return monthA - monthB; // Ascending order (earlier months first)
+  });
+};
+
+// Update your sortGoalsByDate function:
+const sortGoalsByDate = (goals: CarbonGoal[]) => {
+  const monthMap: Record<string, number> = {
+    january: 1, february: 2, march: 3, april: 4,
+    may: 5, june: 6, july: 7, august: 8,
+    september: 9, october: 10, november: 11, december: 12,
+    JANUARY: 1, FEBRUARY: 2, MARCH: 3, APRIL: 4,
+    MAY: 5, JUNE: 6, JULY: 7, AUGUST: 8,
+    SEPTEMBER: 9, OCTOBER: 10, NOVEMBER: 11, DECEMBER: 12,
+    // Handle numeric months too (if your goals use "01", "02", etc.)
+    "01": 1, "02": 2, "03": 3, "04": 4, "05": 5, "06": 6,
+    "07": 7, "08": 8, "09": 9, "10": 10, "11": 11, "12": 12
+  };
+
+  return [...goals].sort((a, b) => {
+    // First compare years
+    const yearA = parseInt(a.year);
+    const yearB = parseInt(b.year);
+    
+    if (yearA !== yearB) {
+      return yearA - yearB; // Ascending order
+    }
+    
+    // If same year, compare months (handle both string and numeric months)
+    const monthA = monthMap[a.month.toLowerCase()] || monthMap[a.month] || 0;
+    const monthB = monthMap[b.month.toLowerCase()] || monthMap[b.month] || 0;
+    
+    return monthA - monthB; // Ascending order
   });
 };
   // Group activities by month-year for the edit button (YOUR ORIGINAL LOGIC)
@@ -251,7 +312,7 @@ const sortGoalsByDate = (goals: CarbonGoal[]) => {
                   <th className="px-4 py-4 font-semibold drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.2)]">
                     <div className="flex items-center gap-2">
                       <Clock size={16} />
-                      Submitted At
+                      Updated At
                     </div>
                   </th>
                   <th className="px-4 py-4 font-semibold drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.2)]">Action</th>
@@ -403,7 +464,7 @@ const sortGoalsByDate = (goals: CarbonGoal[]) => {
                   <th className="px-4 py-4 font-semibold drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.2)]">Fuel Goal Met</th>
                   <th className="px-4 py-4 font-semibold drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.2)]">Water Goal Met</th>
                   <th className="px-4 py-4 font-semibold drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.2)]">Waste Goal Met</th>
-                  <th className="px-4 py-4 font-semibold drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.2)]">Created At</th>
+                  
                   <th className="px-4 py-4 font-semibold drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.2)]">Updated At</th>
                   <th className="px-4 py-4 font-semibold drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.2)]">Action</th>
                 </tr>
@@ -470,9 +531,7 @@ const sortGoalsByDate = (goals: CarbonGoal[]) => {
                         </span>
                       </div>
                     </td>
-                    <td className="px-4 py-4 text-xs text-gray-500">
-                      {goal.createdAt ? new Date(goal.createdAt).toLocaleString() : '-'}
-                    </td>
+                    
                     <td className="px-4 py-4 text-xs text-gray-500">
                       {goal.updatedAt ? new Date(goal.updatedAt).toLocaleString() : '-'}
                     </td>

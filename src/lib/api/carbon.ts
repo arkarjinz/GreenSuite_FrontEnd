@@ -54,7 +54,7 @@ export const calculateFootprint = async (data: CarbonInput[]) => {
         ...input,
         //userId: localStorage.getItem("userId"), 
          userId: userData?.id, // FIXED: Get from userData, not localStorage
-        companyId: userData?.companyId, // FIXED: Get from userData, not localStorage
+      //  companyId: userData?.companyId, // FIXED: Get from userData, not localStorage
          activityType: input.activityType.toUpperCase(),
         month: input.month?.toUpperCase(),
         region: input.region?.toUpperCase(),
@@ -233,7 +233,7 @@ export const updateFootprint = async (
           //userId: localStorage.getItem("userId"),
           //companyId: localStorage.getItem("companyId"),
            userId: userData?.id, // FIXED: Get from userData
-          companyId: userData?.companyId, // FIXED: Get from userData
+          //companyId: userData?.companyId, // FIXED: Get from userData
           activityType: input.activityType.toUpperCase(),
           month: input.month?.toUpperCase(),
           region: input.region?.toUpperCase(),
