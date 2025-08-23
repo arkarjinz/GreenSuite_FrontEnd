@@ -27,17 +27,25 @@ axiosInstance.interceptors.request.use(
             '/health',
             '/api/auth/login',
             '/api/auth/register',
-            '/api/auth/refresh'
+            '/api/auth/refresh',
+            '/api/auth/reapply'
         ];
+        
+        // Check if this is an owner endpoint (requires authentication)
+        const isOwnerEndpoint = config.url?.includes('/api/owner/');
+        
+        // Special case: /api/public/company/users requires authentication
+        const isCompanyUsersEndpoint = config.url?.includes('/api/public/company/users');
         
         const isPublicEndpoint = publicEndpoints.some(endpoint => 
             config.url?.includes(endpoint) || config.url === endpoint
         );
         
-        if (!isPublicEndpoint) {
-        const token = localStorage.getItem('accessToken');
-        if (token) {
-            config.headers.Authorization = `Bearer ${token}`;
+        // Add Authorization header for authenticated endpoints OR special endpoints
+        if (!isPublicEndpoint || isOwnerEndpoint || isCompanyUsersEndpoint) {
+            const token = localStorage.getItem('accessToken');
+            if (token) {
+                config.headers.Authorization = `Bearer ${token}`;
             }
         }
         
@@ -48,6 +56,26 @@ axiosInstance.interceptors.request.use(
                 method: config.method,
                 data: config.data,
                 headers: config.headers
+            });
+        }
+        
+        // Log company users requests for debugging
+        if (config.url?.includes('/api/public/company/users')) {
+            console.log('🚀 Outgoing company users request:', {
+                url: config.url,
+                method: config.method,
+                headers: config.headers,
+                hasAuthHeader: !!config.headers.Authorization
+            });
+        }
+        
+        // Log owner endpoint requests for debugging (excluding rejected users)
+        if (config.url?.includes('/api/owner/') && !config.url?.includes('/rejected-users')) {
+            console.log('🚀 Outgoing owner request:', {
+                url: config.url,
+                method: config.method,
+                headers: config.headers,
+                hasAuthHeader: !!config.headers.Authorization
             });
         }
         

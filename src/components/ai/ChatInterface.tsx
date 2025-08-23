@@ -67,7 +67,10 @@ export default function ChatInterface() {
     const [creditInfo, setCreditInfo] = useState<CreditInfo | null>(null);
     const [showCreditWarning, setShowCreditWarning] = useState(false);
     const [showAutoRefillInfo, setShowAutoRefillInfo] = useState(false);
+    const [selectedModel, setSelectedModel] = useState('RinV1');
+    const [showModelSelector, setShowModelSelector] = useState(false);
     const hasWelcomeMessageRef = useRef(false);
+    const modelSelectorRef = useRef<HTMLDivElement>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -75,6 +78,23 @@ export default function ChatInterface() {
     useEffect(() => {
         setIsClient(true);
     }, []);
+
+    // Click outside handler for model selector
+    useEffect(() => {
+        function handleClickOutside(event: MouseEvent) {
+            if (modelSelectorRef.current && !modelSelectorRef.current.contains(event.target as Node)) {
+                setShowModelSelector(false);
+            }
+        }
+
+        if (showModelSelector) {
+            document.addEventListener('mousedown', handleClickOutside);
+        }
+
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [showModelSelector]);
 
     // Debug logging for authentication state
     useEffect(() => {
@@ -140,11 +160,47 @@ export default function ChatInterface() {
 
         try {
             console.log('💰 Loading credit info for user:', user.id);
+            
+            // Check if we have valid authentication tokens
+            const accessToken = localStorage.getItem('accessToken');
+            const refreshToken = localStorage.getItem('refreshToken');
+            console.log('🔑 Auth status:', { 
+                hasAccessToken: !!accessToken, 
+                hasRefreshToken: !!refreshToken,
+                accessTokenLength: accessToken?.length || 0
+            });
+            
+            if (!accessToken) {
+                console.warn('⚠️ No access token found, cannot load credits');
+                setCreditInfo({
+                    currentCredits: 0,
+                    chatCost: 2,
+                    canChat: false,
+                    possibleChats: 0,
+                    isLowOnCredits: true,
+                    warning: 'Authentication required to load credit information.'
+                });
+                return;
+            }
+            
             const response = await aiCreditsApi.getCreditBalance();
             console.log('💰 Credit API response:', response);
             
-            if (response.success && response.data) {
-                const creditData = response.data;
+            // Handle different response formats from backend
+            let creditData = null;
+            
+            if (response && response.data) {
+                creditData = response.data;
+            } else if (response && response.status === 'success' && response.data) {
+                creditData = response.data;
+            } else if (response && typeof response === 'object') {
+                // Sometimes the response might be the data directly
+                creditData = response;
+            }
+            
+            console.log('💰 Processed credit data:', creditData);
+            
+            if (creditData && (creditData.currentCredits !== undefined || creditData.chatCost !== undefined)) {
                 console.log('💰 Setting credit info:', creditData);
                 setCreditInfo(creditData);
                 
@@ -154,7 +210,8 @@ export default function ChatInterface() {
                     setTimeout(() => setShowCreditWarning(false), 8000);
                 }
             } else {
-                console.warn('⚠️ Credit API returned no data, using defaults');
+                console.warn('⚠️ Credit API returned no valid data, using defaults');
+                console.warn('⚠️ Response structure:', JSON.stringify(response, null, 2));
                 // Set reasonable defaults if API returns no data
                 setCreditInfo({
                     currentCredits: 50,
@@ -166,6 +223,23 @@ export default function ChatInterface() {
             }
         } catch (error: any) {
             console.error('❌ Error loading credit info:', error);
+            
+            // Handle 401 Unauthorized specifically
+            if (error.message?.includes('401') || error.response?.status === 401) {
+                console.error('🚫 Authentication failed - clearing tokens and showing error');
+                // Don't clear tokens here, let the axios interceptor handle it
+                setCreditInfo({
+                    currentCredits: 0,
+                    chatCost: 2,
+                    canChat: false,
+                    possibleChats: 0,
+                    isLowOnCredits: true,
+                    warning: 'Authentication expired. Please refresh the page to re-login.'
+                });
+                setShowCreditWarning(true);
+                setTimeout(() => setShowCreditWarning(false), 10000);
+                return;
+            }
             
             // Handle specific error cases
             if (error.message?.includes('Insufficient')) {
@@ -468,13 +542,24 @@ export default function ChatInterface() {
         try {
             console.log('💰 Checking credits before sending message...');
             const creditCheckResponse = await aiCreditsApi.canUserChat();
+            console.log('💰 Credit check response:', creditCheckResponse);
             
-            // If the API explicitly says user cannot chat
-            if (creditCheckResponse && !creditCheckResponse.canChat) {
-                console.log('❌ Backend credit check failed:', creditCheckResponse);
+            // Check if the response has the expected structure
+            const canChat = creditCheckResponse?.data?.canChat ?? creditCheckResponse?.canChat;
+            const currentCredits = creditCheckResponse?.data?.currentCredits ?? creditCheckResponse?.currentCredits ?? 0;
+            const chatCost = creditCheckResponse?.data?.chatCost ?? creditCheckResponse?.chatCost ?? 2;
+            
+            console.log('💰 Parsed credit info:', { canChat, currentCredits, chatCost });
+            
+            // If the API explicitly says user cannot chat, but they have credits, double-check
+            if (canChat === false && currentCredits >= chatCost) {
+                console.log('⚠️ Backend says user cannot chat but they have sufficient credits. Proceeding anyway...');
+                // Continue with the chat since user actually has credits
+            } else if (canChat === false && currentCredits < chatCost) {
+                console.log('❌ Backend credit check failed - insufficient credits:', { currentCredits, chatCost });
                 addMessage({
                     id: `no_credits_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-                    content: `💸 **Oh dear!** It seems you don't have enough credits to continue our environmental chat. Each conversation costs **${creditCheckResponse.chatCost || 2} credits**, but you only have **${creditCheckResponse.currentCredits || 0} credits** remaining.\n\n🌱 To continue learning about sustainability with me, you'll need to purchase more credits. Would you like to visit the payment section to add more credits to your account?`,
+                    content: `💸 **Oh dear!** It seems you don't have enough credits to continue our environmental chat. Each conversation costs **${chatCost} credits**, but you only have **${currentCredits} credits** remaining.\n\n🌱 Don't worry! Your credits will automatically refill every 5 minutes. Please wait a moment and try again.`,
                     isUser: false,
                     timestamp: new Date()
                 });
@@ -485,7 +570,7 @@ export default function ChatInterface() {
             }
             
             // Also check local credit info as backup
-            if (creditInfo && creditInfo.canChat === false) {
+            if (creditInfo && creditInfo.canChat === false && creditInfo.currentCredits < creditInfo.chatCost) {
                 console.log('❌ Local credit check failed:', creditInfo);
                 addMessage({
                     id: `no_credits_local_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -505,7 +590,7 @@ export default function ChatInterface() {
             if (creditError.message?.includes('Insufficient') || creditError.message?.includes('credits')) {
                 addMessage({
                     id: `no_credits_error_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-                    content: `💸 **No Credits Remaining!** I'm afraid you've run out of credits to continue our environmental discussions.\n\n🌱 Each chat costs **2 credits**, and it looks like your account needs a top-up. Please visit the payment section to purchase more credits!`,
+                    content: `💸 **No Credits Remaining!** I'm afraid you've run out of credits to continue our environmental discussions.\n\n🌱 Don't worry! Your credits will automatically refill every 5 minutes. Please wait a moment and try again.`,
                     isUser: false,
                     timestamp: new Date()
                 });
@@ -576,8 +661,12 @@ export default function ChatInterface() {
 
             // Refresh credit info after successful chat to show updated balance
             setTimeout(async () => {
+                console.log('🔄 Refreshing credit info after successful chat...');
                 await loadCreditInfo();
             }, 500);
+            
+            // Also refresh immediately
+            await loadCreditInfo();
             
         } catch (error: any) {
             console.error('❌ Chat error details:', {
@@ -1213,6 +1302,9 @@ export default function ChatInterface() {
                             <div className="flex items-center space-x-2">
                                 <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                                 <span className="text-sm text-gray-500">Online</span>
+                                <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
+                                    {selectedModel}
+                                </span>
                             </div>
                         </div>
                     </div>
@@ -1281,6 +1373,8 @@ export default function ChatInterface() {
                     </div>
                 </div>
             </div>
+
+
 
             {/* Messages Area - Scrollable only inside this container */}
             <div className="flex-1 overflow-hidden">
@@ -1352,7 +1446,7 @@ export default function ChatInterface() {
                                             <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
                                         </div>
                                         <span className="text-sm text-gray-500">
-                                            {streamingMode === 'streaming' ? 'Rin is typing...' : 'Rin is thinking...'}
+                                            {streamingMode === 'streaming' ? `${selectedModel} is typing...` : `${selectedModel} is thinking...`}
                                         </span>
                                     </div>
                                 </div>
@@ -1386,6 +1480,75 @@ export default function ChatInterface() {
                             Quotes (Free)
                     </button>
 
+                    {/* Model Selector */}
+                    <div className="relative" ref={modelSelectorRef}>
+                        <button
+                            onClick={() => setShowModelSelector(!showModelSelector)}
+                            className="flex items-center px-3 py-2 bg-purple-50 hover:bg-purple-100 text-purple-700 rounded-full text-sm transition-all font-medium"
+                        >
+                            <CpuChipIcon className="w-4 h-4 mr-1" />
+                            {selectedModel}
+                            <svg 
+                                className={`w-4 h-4 ml-1 transition-transform ${showModelSelector ? 'rotate-180' : ''}`}
+                                fill="none" 
+                                stroke="currentColor" 
+                                viewBox="0 0 24 24"
+                            >
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                            </svg>
+                        </button>
+
+                        {/* Model Dropdown */}
+                        {showModelSelector && (
+                            <div className="absolute bottom-full mb-2 left-0 bg-white border border-gray-200 rounded-lg shadow-lg p-2 min-w-[200px] z-10">
+                                {/* Arrow pointing down */}
+                                <div className="absolute top-full left-4 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-200"></div>
+                                <div className="absolute top-full left-4 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-white" style={{ marginTop: '-1px' }}></div>
+                                <div className="text-xs font-medium text-gray-500 mb-2 px-2">Select Model</div>
+                                <div className="space-y-1">
+                                    <button
+                                        onClick={() => {
+                                            setSelectedModel('RinV1');
+                                            setShowModelSelector(false);
+                                        }}
+                                        className={`w-full text-left px-3 py-2 rounded-md text-sm transition-all ${
+                                            selectedModel === 'RinV1'
+                                                ? 'bg-green-100 text-green-700 font-medium'
+                                                : 'text-gray-700 hover:bg-gray-50'
+                                        }`}
+                                    >
+                                        <div className="flex items-center justify-between">
+                                            <span>RinV1</span>
+                                            {selectedModel === 'RinV1' && (
+                                                <svg className="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                                </svg>
+                                            )}
+                                        </div>
+                                    </button>
+                                    <button
+                                        disabled
+                                        className="w-full text-left px-3 py-2 rounded-md text-sm text-gray-400 bg-gray-50 cursor-not-allowed opacity-50"
+                                    >
+                                        <div className="flex items-center justify-between">
+                                            <span>RinV2</span>
+                                            <span className="text-xs text-gray-400">(Upcoming)</span>
+                                        </div>
+                                    </button>
+                                    <button
+                                        disabled
+                                        className="w-full text-left px-3 py-2 rounded-md text-sm text-gray-400 bg-gray-50 cursor-not-allowed opacity-50"
+                                    >
+                                        <div className="flex items-center justify-between">
+                                            <span>RinV3</span>
+                                            <span className="text-xs text-gray-400">(Upcoming)</span>
+                                        </div>
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
                     </div>
 
                     {/* Credit Info */}
@@ -1415,8 +1578,8 @@ export default function ChatInterface() {
                                 onKeyPress={handleKeyPress}
                                 placeholder={
                                     creditInfo && creditInfo.canChat === false 
-                                        ? "Need more credits to chat with Rin..."
-                                        : "Message Rin about sustainability..."
+                                        ? `Need more credits to chat with ${selectedModel}...`
+                                        : `Message ${selectedModel} about sustainability...`
                                 }
                                 className={`w-full px-6 py-4 bg-gray-50 border border-gray-200 rounded-3xl focus:ring-2 focus:ring-green-500 focus:border-green-500 focus:bg-white resize-none transition-all text-gray-900 placeholder-gray-500 ${
                                     creditInfo && creditInfo.canChat === false ? 'opacity-60' : ''
@@ -1448,8 +1611,8 @@ export default function ChatInterface() {
                 {/* Helpful Hints */}
                 <div className="mt-2 text-xs text-gray-400 text-center">
                     {creditInfo && creditInfo.canChat === false 
-                        ? `You need ${creditInfo.chatCost} AI credits to chat with Rin`
-                        : "Ask about carbon footprints, renewable energy, or sustainable practices"
+                        ? `You need ${creditInfo.chatCost} AI credits to chat with ${selectedModel}`
+                        : `Ask ${selectedModel} about carbon footprints, renewable energy, or sustainable practices`
                     }
                 </div>
             </div>

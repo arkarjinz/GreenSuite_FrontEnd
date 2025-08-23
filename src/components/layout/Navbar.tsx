@@ -18,7 +18,9 @@ import {
     Cog6ToothIcon,
     ArrowRightOnRectangleIcon,
     AcademicCapIcon,
-    CreditCardIcon
+    CreditCardIcon,
+    ClockIcon,
+    CogIcon
 } from '@heroicons/react/24/outline';
 
 const Navbar = () => {
@@ -149,18 +151,19 @@ const AuthenticatedNav = ({ user, logout }: { user: AuthUser | null; logout: () 
         {/* Navigation Links */}
         <div className="flex items-center space-x-2">
             <NavLink href="/dashboard" icon={HomeIcon}>Dashboard</NavLink>
-                                    <NavLink href="/ai-chat/landing" icon={SparklesIcon}>Meet Rin</NavLink>
-            <NavLink href="/ai-chat" icon={ChatBubbleLeftRightIcon}>AI Assistant</NavLink>
+            <NavLink href="/ai-chat" icon={ChatBubbleLeftRightIcon}>AI Chat</NavLink>
             <NavLink href="/credits" icon={CreditCardIcon}>Credits</NavLink>
-            <NavLink href="/payment" icon={CreditCardIcon}>Payment</NavLink>
-            <NavLink href="/carbon" icon={CalculatorIcon}>Carbon Calculator</NavLink>
+            <NavLink href="/carbon" icon={CalculatorIcon}>Carbon</NavLink>
             <NavLink href="/reports" icon={DocumentChartBarIcon}>Reports</NavLink>
+            <NavLink href="/dashboard/company/users" icon={UsersIcon}>Company</NavLink>
             {user?.companyRole === 'OWNER' && (
                 <>
-                    <NavLink href="/dashboard/owner/users" icon={UsersIcon}>Manage Users</NavLink>
-                    <NavLink href="/dashboard/owner/rejected" icon={Cog6ToothIcon}>Rejected Users</NavLink>
-                    <NavLink href="/dashboard/owner/payment" icon={CreditCardIcon}>Payment Admin</NavLink>
+                    <NavLink href="/dashboard/owner/users" icon={UsersIcon}>Users</NavLink>
+                    
                 </>
+            )}
+            {user?.globalAdmin && (
+                <NavLink href="/dashboard/admin" icon={CogIcon}>Admin</NavLink>
             )}
         </div>
 
@@ -219,18 +222,19 @@ const MobileAuthenticatedNav = ({ user, logout, onClose }: { user: AuthUser | nu
     <div className="space-y-4">
                             <div className="grid grid-cols-2 gap-3">
                         <MobileNavLink href="/dashboard" icon={HomeIcon} onClick={onClose}>Dashboard</MobileNavLink>
-                        <MobileNavLink href="/ai-chat/landing" icon={SparklesIcon} onClick={onClose}>Meet Rin</MobileNavLink>
-                        <MobileNavLink href="/ai-chat" icon={ChatBubbleLeftRightIcon} onClick={onClose}>AI Assistant</MobileNavLink>
+                        <MobileNavLink href="/ai-chat" icon={ChatBubbleLeftRightIcon} onClick={onClose}>AI Chat</MobileNavLink>
                         <MobileNavLink href="/credits" icon={CreditCardIcon} onClick={onClose}>Credits</MobileNavLink>
-                        <MobileNavLink href="/payment" icon={CreditCardIcon} onClick={onClose}>Payment</MobileNavLink>
-                        <MobileNavLink href="/carbon" icon={CalculatorIcon} onClick={onClose}>Carbon Calculator</MobileNavLink>
+                        <MobileNavLink href="/carbon" icon={CalculatorIcon} onClick={onClose}>Carbon</MobileNavLink>
                         <MobileNavLink href="/reports" icon={DocumentChartBarIcon} onClick={onClose}>Reports</MobileNavLink>
+                        <MobileNavLink href="/dashboard/company/users" icon={UsersIcon} onClick={onClose}>Company</MobileNavLink>
                         {user?.companyRole === 'OWNER' && (
                             <>
-                                <MobileNavLink href="/dashboard/owner/users" icon={UsersIcon} onClick={onClose}>Manage Users</MobileNavLink>
-                                <MobileNavLink href="/dashboard/owner/rejected" icon={Cog6ToothIcon} onClick={onClose}>Rejected Users</MobileNavLink>
-                                <MobileNavLink href="/dashboard/owner/payment" icon={CreditCardIcon} onClick={onClose}>Payment Admin</MobileNavLink>
+                                <MobileNavLink href="/dashboard/owner/users" icon={UsersIcon} onClick={onClose}>Users</MobileNavLink>
+        
                             </>
+                        )}
+                        {user?.globalAdmin && (
+                            <MobileNavLink href="/dashboard/admin" icon={CogIcon} onClick={onClose}>Admin</MobileNavLink>
                         )}
                     </div>
 

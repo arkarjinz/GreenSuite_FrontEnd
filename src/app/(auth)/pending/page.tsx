@@ -35,6 +35,35 @@ export default function PendingPage() {
         }
     }, [user]);
 
+    // Handle redirects for non-pending users
+    useEffect(() => {
+        if (!isLoading && user && user.approvalStatus !== 'PENDING') {
+            if (user.approvalStatus === 'REJECTED') {
+                // Check if user has reapplication token to determine if they should go to reapply
+                const reapplicationToken = localStorage.getItem('reapplicationToken');
+                const rejectionInfo = localStorage.getItem('rejectionInfo');
+                
+                if (reapplicationToken && rejectionInfo) {
+                    try {
+                        const rejectionData = JSON.parse(rejectionInfo);
+                        // If user has both token and rejection info, they can reapply
+                        router.push('/reapply');
+                    } catch (e) {
+                        // If rejection info is invalid, go to rejected page
+                        router.push('/rejected');
+                    }
+                } else {
+                    // If no token or rejection info, go to rejected page
+                    router.push('/rejected');
+                }
+            } else if (user.approvalStatus === 'APPROVED') {
+                router.push('/dashboard');
+            } else {
+                router.push('/login');
+            }
+        }
+    }, [user, isLoading, router]);
+
     // Don't render anything until client-side hydration is complete
     if (!isClient || isLoading) {
         return (
@@ -44,9 +73,8 @@ export default function PendingPage() {
         );
     }
 
-    // If user is not pending, redirect to dashboard
-    if (user && user.approvalStatus !== 'PENDING') {
-            router.push('/dashboard');
+    // If no user, show loading
+    if (!user) {
         return (
             <div className="min-h-screen bg-white flex items-center justify-center">
                 <LoadingSpinner />
@@ -54,9 +82,9 @@ export default function PendingPage() {
         );
     }
 
-    // If no user, show loading
-    if (!user) {
-    return (
+    // If user is not pending, show loading while redirecting
+    if (user.approvalStatus !== 'PENDING') {
+        return (
             <div className="min-h-screen bg-white flex items-center justify-center">
                 <LoadingSpinner />
             </div>
@@ -64,9 +92,11 @@ export default function PendingPage() {
     }
 
     return (
-        <div className="w-full">
-            {/* Status Card - Full width on mobile, centered on desktop */}
-            <div className="w-full max-w-2xl bg-white rounded-2xl shadow-lg border border-gray-100 p-4 md:p-6 lg:p-8 animate-slide-up">
+        <div className="w-full h-full flex flex-col justify-center">
+            {/* Main Content - Full Width */}
+            <div className="w-full max-w-2xl mx-auto">
+                {/* Status Card */}
+                <div className="w-full bg-white rounded-2xl shadow-lg border border-gray-100 p-4 md:p-6 lg:p-8 animate-slide-up">
                             {/* Header with status icon */}
                             <div className="text-center mb-6">
                         <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
@@ -171,19 +201,13 @@ export default function PendingPage() {
                                 )}
                             </div>
 
-                            {/* Action Buttons */}
+                            {/* Action Button */}
                             <div className="flex flex-col gap-3">
                         <button
                                     onClick={() => logout()}
                             className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] shadow-md hover:shadow-lg"
                                 >
                                     Sign Out
-                        </button>
-                        <button
-                                    onClick={() => router.refresh()}
-                            className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-3 px-4 rounded-lg border border-gray-300 transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98]"
-                                >
-                                    Check Approval Status
                         </button>
                             </div>
 
@@ -195,6 +219,6 @@ export default function PendingPage() {
                             </div>
                         </div>
                 </div>
-        
+        </div>
     );
 }

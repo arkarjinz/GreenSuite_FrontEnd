@@ -54,10 +54,12 @@ export type AuthUser = {
     // Ban and rejection tracking
     rejectionCount?: number;
     remainingAttempts?: number;
-    isBanned?: boolean;
+    banned?: boolean;
     banReason?: string;
     bannedAt?: string;
-    warning?: string;
+    approachingBan?: boolean;
+    warning?: boolean;
+    lastRejectionAt?: string;
 };
 
 export type AICreditInfo = {
@@ -66,7 +68,7 @@ export type AICreditInfo = {
     canChat: boolean;
     possibleChats: number;
     isLowOnCredits: boolean;
-    warning?: string;
+    warning?: string | boolean;
     
     // Enhanced credit info
     totalCreditsPurchased?: number;

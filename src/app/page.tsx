@@ -4,7 +4,7 @@ import { Suspense } from "react";
 import Navbar from "@/components/layout/Navbar";
 import ModelShowcase from "@/components/3d/ModelShowcase";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
-import AICreditPricing from "@/components/payment/AICreditPricing";
+
 
 function ModelShowcaseWrapper() {
   return (
@@ -65,8 +65,7 @@ export default function Home() {
             <ModelShowcaseWrapper />
           </Suspense>
           
-          {/* AI Credit Pricing Section */}
-          <AICreditPricing />
+
       </main>
     </div>
   );
