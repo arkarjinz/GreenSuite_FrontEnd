@@ -26,7 +26,10 @@ const Navbar = () => {
     const [isClient, setIsClient] = useState(false);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [scrolled, setScrolled] = useState(false);
-
+// ✅ ADD THESE ROLE HELPER FUNCTIONS by thu to make the role based access to pages
+    const isOwner = (user: AuthUser | null) => user?.companyRole === 'OWNER';
+    const isManagerOrEmployee = (user: AuthUser | null) => 
+        ['MANAGER', 'EMPLOYEE'].includes(user?.companyRole || '');
     // Set isClient to true after component mounts
     useEffect(() => {
         setIsClient(true);
@@ -156,9 +159,12 @@ const AuthenticatedNav = ({ user, logout }: { user: AuthUser | null; logout: () 
             <NavLink href="/ai-chat" icon={ChatBubbleLeftRightIcon}>AI Assistant</NavLink>
             <NavLink href="/credits" icon={CreditCardIcon}>Credits</NavLink>
             {/* Combined carbon calculator routes */}
-            <NavLink href="/resource/input" icon={CalculatorIcon}>Carbon Calculator</NavLink>
-            
-            <NavLink href="/resource/goal" icon={DocumentChartBarIcon}>Goal Track</NavLink>
+            {/* 🔒 RESTRICT Carbon Calculator to OWNER only */}
+            {isOwner(user) && (
+            <NavLink href="/resource/input" icon={CalculatorIcon}>Carbon Calculator</NavLink>)}
+            {/* 🔒 RESTRICT Goal Track to OWNER only */}
+            {isOwner(user) && (
+            <NavLink href="/resource/goal" icon={DocumentChartBarIcon}>Goal Track</NavLink>)}
             {/* Combined reports routes */}
            
             <NavLink href="/report" icon={DocumentChartBarIcon}>Report</NavLink>
