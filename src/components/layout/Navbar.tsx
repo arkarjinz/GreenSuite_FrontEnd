@@ -153,8 +153,9 @@ const AuthenticatedNav = ({ user, logout }: { user: AuthUser | null; logout: () 
             <NavLink href="/dashboard" icon={HomeIcon}>Dashboard</NavLink>
             <NavLink href="/ai-chat" icon={ChatBubbleLeftRightIcon}>AI Chat</NavLink>
             <NavLink href="/credits" icon={CreditCardIcon}>Credits</NavLink>
-            <NavLink href="/carbon" icon={CalculatorIcon}>Carbon</NavLink>
-            <NavLink href="/reports" icon={DocumentChartBarIcon}>Reports</NavLink>
+            <NavLink href="/resource/input" icon={CalculatorIcon}>Carbon</NavLink>
+            <NavLink href="/resource/goal" icon={DocumentChartBarIcon}>Goal Track</NavLink>
+            <NavLink href="/report" icon={DocumentChartBarIcon}>Reports</NavLink>
             <NavLink href="/dashboard/company/users" icon={UsersIcon}>Company</NavLink>
             {user?.companyRole === 'OWNER' && (
                 <>
@@ -224,7 +225,8 @@ const MobileAuthenticatedNav = ({ user, logout, onClose }: { user: AuthUser | nu
                         <MobileNavLink href="/dashboard" icon={HomeIcon} onClick={onClose}>Dashboard</MobileNavLink>
                         <MobileNavLink href="/ai-chat" icon={ChatBubbleLeftRightIcon} onClick={onClose}>AI Chat</MobileNavLink>
                         <MobileNavLink href="/credits" icon={CreditCardIcon} onClick={onClose}>Credits</MobileNavLink>
-                        <MobileNavLink href="/carbon" icon={CalculatorIcon} onClick={onClose}>Carbon</MobileNavLink>
+                        <MobileNavLink href="/resource/input" icon={CalculatorIcon} onClick={onClose}>Carbon</MobileNavLink>
+                        <NavLink href="/resource/goal" icon={DocumentChartBarIcon}>Goal Track</NavLink>
                         <MobileNavLink href="/reports" icon={DocumentChartBarIcon} onClick={onClose}>Reports</MobileNavLink>
                         <MobileNavLink href="/dashboard/company/users" icon={UsersIcon} onClick={onClose}>Company</MobileNavLink>
                         {user?.companyRole === 'OWNER' && (
