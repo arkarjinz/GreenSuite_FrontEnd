@@ -19,6 +19,8 @@ interface AuthUser {
     aiCredits?: number;
     canChat?: boolean;
     isLowOnCredits?: boolean;
+    remainingAttempts?: number;
+    warning?: boolean;
 }
 
 interface LoginDto {
@@ -194,7 +196,30 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             }
         } else if (user.approvalStatus === 'REJECTED') {
             if (currentPath.startsWith('/login') || currentPath.startsWith('/register')) {
-                router.push('/rejected');
+                console.log('🔐 AuthContext: Redirecting rejected user from', currentPath);
+                
+                // Check if user has reapplication token to determine if they should go to reapply
+                const reapplicationToken = localStorage.getItem('reapplicationToken');
+                const rejectionInfo = localStorage.getItem('rejectionInfo');
+                
+                console.log('🔐 AuthContext: Reapplication token exists:', !!reapplicationToken);
+                console.log('🔐 AuthContext: Rejection info exists:', !!rejectionInfo);
+             if (reapplicationToken && rejectionInfo) {
+                    try {
+                        const rejectionData = JSON.parse(rejectionInfo);
+                        // If user has both token and rejection info, they can reapply
+                        console.log('🔐 AuthContext: Redirecting to /reapply');
+                        router.push('/reapply');
+                    } catch (e) {
+                        // If rejection info is invalid, go to rejected page
+                        console.log('🔐 AuthContext: Invalid rejection info, redirecting to /rejected');
+                        router.push('/rejected');
+                    }
+                } else {
+                    // If no token or rejection info, go to rejected page
+                    console.log('🔐 AuthContext: No token/info, redirecting to /rejected');
+                    router.push('/rejected');
+                }
             }
         } else if (user.approvalStatus === 'APPROVED') {
             if (currentPath.startsWith('/login') || currentPath.startsWith('/register')) {
@@ -247,7 +272,35 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                     message: response.message 
                 };
             }
-            
+             // Handle rejected status
+            if (response.status === 'rejected') {
+                console.log('🔐 AuthContext: Handling rejected user login', response);
+                
+                // Store rejection information for reapply functionality
+                if (response.user) {
+                    // Store rejection info if provided
+                    if (response.rejectionInfo) {
+                        localStorage.setItem('rejectionInfo', JSON.stringify(response.rejectionInfo));
+                        console.log('🔐 AuthContext: Stored rejection info');
+                    }
+                    
+                    // Store reapplication token if provided
+                    if (response.reapplicationToken) {
+                        localStorage.setItem('reapplicationToken', response.reapplicationToken);
+                        console.log('🔐 AuthContext: Stored reapplication token');
+                    }
+                    
+                    // Set user after storing tokens to ensure redirect logic works correctly
+                    setUser(response.user);
+                    localStorage.setItem('user', JSON.stringify(response.user));
+                    console.log('🔐 AuthContext: Set user for rejected status');
+                }
+                return { 
+                    success: false, 
+                    status: 'rejected', 
+                    message: response.message 
+                };
+            }
             // Handle other cases
             return { 
                 success: false, 

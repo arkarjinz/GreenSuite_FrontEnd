@@ -152,8 +152,7 @@ const AuthenticatedNav = ({ user, logout }: { user: AuthUser | null; logout: () 
         {/* Navigation Links - Combined from both versions */}
         <div className="flex items-center space-x-2">
             <NavLink href="/dashboard" icon={HomeIcon}>Dashboard</NavLink>
-            <NavLink href="/ai-chat/landing" icon={SparklesIcon}>Meet Rin</NavLink>
-            <NavLink href="/ai-chat" icon={ChatBubbleLeftRightIcon}>AI Assistant</NavLink>
+            <NavLink href="/ai-chat" icon={ChatBubbleLeftRightIcon}>AI Chat</NavLink>
             <NavLink href="/credits" icon={CreditCardIcon}>Credits</NavLink>
             {/* Combined carbon calculator routes */}
         {user?.companyRole === 'OWNER' && (
