@@ -18,7 +18,9 @@ import {
     Cog6ToothIcon,
     ArrowRightOnRectangleIcon,
     AcademicCapIcon,
-    CreditCardIcon
+    CreditCardIcon,
+    ClockIcon,
+    CogIcon
 } from '@heroicons/react/24/outline';
 
 const Navbar = () => {
@@ -44,7 +46,7 @@ const Navbar = () => {
     // Show minimal navbar during initial load
     if (!isClient || isLoading) {
         return (
-            <nav className="bg-white/80 backdrop-blur-md shadow-sm border-b border-emerald-100 fixed w-full z-50">
+            <nav className="bg-white/80 backdrop-blur-md shadow-sm border-b border-emerald-100 relative z-50">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex justify-between h-16 items-center">
                         <div className="flex items-center">
@@ -74,30 +76,27 @@ const Navbar = () => {
                     ? 'bg-white/90 backdrop-blur-md shadow-lg border-b border-emerald-100' 
                     : 'bg-white/80 backdrop-blur-sm shadow-sm border-b border-emerald-50'
             }`}>
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex justify-between h-16 items-center">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div className="flex justify-between h-16 items-center">
                         {/* Logo */}
-                        <div className="flex items-center">
-                            <Link 
-                                href={isAuthenticated ? "/dashboard" : "/"} 
-                                className="flex items-center hover:opacity-80 transition-all duration-300 group"
-                            >
+                    <div className="flex items-center">
+                            <Link href="/" className="flex items-center hover:opacity-80 transition-all duration-300 group">
                                 <div className="relative">
                                     <GlobeAltIcon className="w-6 h-6 text-emerald-600 mr-2 group-hover:scale-110 transition-transform duration-300" />
                                     <div className="absolute inset-0 bg-emerald-400/20 rounded-full blur-lg group-hover:blur-xl transition-all duration-300"></div>
                                 </div>
                                 <span className="text-lg font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
-                                    GreenSuite
-                                </span>
+                                GreenSuite
+                            </span>
                                 <SparklesIcon className="w-4 h-4 text-emerald-500 ml-1 opacity-0 group-hover:opacity-100 transition-all duration-300 group-hover:animate-pulse" />
-                            </Link>
-                        </div>
+                        </Link>
+                    </div>
 
                         {/* Desktop Navigation */}
-                        {isAuthenticated && user ? (
-                            <AuthenticatedNav user={user} logout={logout} />
-                        ) : (
-                            <UnauthenticatedNav />
+                    {isAuthenticated && user ? (
+                        <AuthenticatedNav user={user} logout={logout} />
+                    ) : (
+                        <UnauthenticatedNav />
                         )}
 
                         {/* Mobile menu button */}
@@ -124,11 +123,11 @@ const Navbar = () => {
                                 <MobileAuthenticatedNav user={user} logout={logout} onClose={() => setIsMobileMenuOpen(false)} />
                             ) : (
                                 <MobileUnauthenticatedNav onClose={() => setIsMobileMenuOpen(false)} />
-                            )}
-                        </div>
-                    </div>
+                    )}
+                </div>
+            </div>
                 )}
-            </nav>
+        </nav>
             
             {/* Spacer to prevent content from hiding under fixed navbar */}
             <div className="h-16"></div>
@@ -149,33 +148,30 @@ const NavLink = ({ href, children, icon: Icon }: { href: string; children: React
 
 const AuthenticatedNav = ({ user, logout }: { user: AuthUser | null; logout: () => void }) => (
     <div className="hidden md:flex items-center space-x-6">
-        {/* Navigation Links - Combined from both versions */}
+        {/* Navigation Links */}
         <div className="flex items-center space-x-2">
             <NavLink href="/dashboard" icon={HomeIcon}>Dashboard</NavLink>
             <NavLink href="/ai-chat" icon={ChatBubbleLeftRightIcon}>AI Chat</NavLink>
             <NavLink href="/credits" icon={CreditCardIcon}>Credits</NavLink>
-            {/* Combined carbon calculator routes */}
-        {user?.companyRole === 'OWNER' && (
-            <NavLink href="/resource/input" icon={CalculatorIcon}>Carbon Calculator</NavLink>)}
-
-            {user?.companyRole === 'OWNER' && (
-            <NavLink href="/resource/goal" icon={DocumentChartBarIcon}>Goal Track</NavLink>)}
-            
-           
-            <NavLink href="/report" icon={DocumentChartBarIcon}>Report</NavLink>
+            <NavLink href="/carbon" icon={CalculatorIcon}>Carbon</NavLink>
+            <NavLink href="/reports" icon={DocumentChartBarIcon}>Reports</NavLink>
+            <NavLink href="/dashboard/company/users" icon={UsersIcon}>Company</NavLink>
             {user?.companyRole === 'OWNER' && (
                 <>
-                    <NavLink href="/dashboard/owner/users" icon={UsersIcon}>Manage Users</NavLink>
-                    <NavLink href="/dashboard/owner/rejected" icon={Cog6ToothIcon}>Rejected Users</NavLink>
+                    <NavLink href="/dashboard/owner/users" icon={UsersIcon}>Users</NavLink>
+                    
                 </>
+            )}
+            {user?.globalAdmin && (
+                <NavLink href="/dashboard/admin" icon={CogIcon}>Admin</NavLink>
             )}
         </div>
 
-        {/* User Profile Section - Enhanced from first version */}
+        {/* User Profile Section */}
         <div className="flex items-center space-x-4 pl-6 border-l border-emerald-200">
-            <div className="relative group">
-                {/* User Info Display */}
-                <div className="flex items-center space-x-3 bg-gradient-to-r from-emerald-50 to-teal-50 px-3 py-2 rounded-xl border border-emerald-100 cursor-pointer">
+            {/* User Info */}
+            <div className="flex items-center space-x-3">
+                <div className="flex items-center space-x-3 bg-gradient-to-r from-emerald-50 to-teal-50 px-3 py-2 rounded-xl border border-emerald-100">
                     <div className="w-7 h-7 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-full flex items-center justify-center">
                         <UserIcon className="w-3.5 h-3.5 text-white" />
                     </div>
@@ -188,32 +184,17 @@ const AuthenticatedNav = ({ user, logout }: { user: AuthUser | null; logout: () 
                     </div>
                 </div>
 
-                {/* Dropdown Menu - From second version */}
-                <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-lg py-2 hidden group-hover:block z-50 border border-emerald-100">
-                    <div className="px-4 py-3 border-b border-emerald-100">
-                        <p className="text-sm font-semibold text-gray-900">
-                            {user?.firstName} {user?.lastName}
-                        </p>
-                        <p className="text-xs text-gray-500">{user?.email}</p>
-                        {user?.companyName && (
-                            <p className="text-xs text-emerald-600 mt-1 font-medium">{user.companyName}</p>
-                        )}
-                    </div>
-                    <NavDropdownLink href="/profile" icon={UserIcon}>Your Profile</NavDropdownLink>
-                    <NavDropdownLink href="/settings" icon={Cog6ToothIcon}>Settings</NavDropdownLink>
-                </div>
+                {/* Logout Button */}
+                <Button
+                    onClick={logout}
+                    variant="outline"
+                    size="sm"
+                    className="text-gray-700 hover:text-red-600 hover:border-red-300 hover:bg-red-50 transition-all duration-200 flex items-center space-x-2 text-xs px-3 py-1.5"
+                >
+                    <ArrowRightOnRectangleIcon className="w-3.5 h-3.5" />
+                    <span>Logout</span>
+                </Button>
             </div>
-
-            {/* Logout Button */}
-            <Button
-                onClick={logout}
-                variant="outline"
-                size="sm"
-                className="text-gray-700 hover:text-red-600 hover:border-red-300 hover:bg-red-50 transition-all duration-200 flex items-center space-x-2 text-xs px-3 py-1.5"
-            >
-                <ArrowRightOnRectangleIcon className="w-3.5 h-3.5" />
-                <span>Logout</span>
-            </Button>
         </div>
     </div>
 );
@@ -239,23 +220,23 @@ const UnauthenticatedNav = () => (
 
 const MobileAuthenticatedNav = ({ user, logout, onClose }: { user: AuthUser | null; logout: () => void; onClose: () => void }) => (
     <div className="space-y-4">
-        <div className="grid grid-cols-2 gap-3">
-            <MobileNavLink href="/dashboard" icon={HomeIcon} onClick={onClose}>Dashboard</MobileNavLink>
-            <MobileNavLink href="/ai-chat/landing" icon={SparklesIcon} onClick={onClose}>Meet Rin</MobileNavLink>
-            <MobileNavLink href="/ai-chat" icon={ChatBubbleLeftRightIcon} onClick={onClose}>AI Assistant</MobileNavLink>
-            <MobileNavLink href="/credits" icon={CreditCardIcon} onClick={onClose}>Credits</MobileNavLink>
-            {user?.companyRole === 'OWNER' && (
-            <MobileNavLink href="/resource/input" icon={CalculatorIcon} onClick={onClose}>Carbon Calculator</MobileNavLink>)}
-            {user?.companyRole === 'OWNER' && (
-            <MobileNavLink href="/resource/goal" icon={DocumentChartBarIcon} onClick={onClose}>Goal Track</MobileNavLink>)}
-            <MobileNavLink href="/report" icon={DocumentChartBarIcon} onClick={onClose}>Reports</MobileNavLink>
-            {user?.companyRole === 'OWNER' && (
-                <>
-                    <MobileNavLink href="/dashboard/owner/users" icon={UsersIcon} onClick={onClose}>Manage Users</MobileNavLink>
-                    <MobileNavLink href="/dashboard/owner/rejected" icon={Cog6ToothIcon} onClick={onClose}>Rejected Users</MobileNavLink>
-                </>
-            )}
-        </div>
+                            <div className="grid grid-cols-2 gap-3">
+                        <MobileNavLink href="/dashboard" icon={HomeIcon} onClick={onClose}>Dashboard</MobileNavLink>
+                        <MobileNavLink href="/ai-chat" icon={ChatBubbleLeftRightIcon} onClick={onClose}>AI Chat</MobileNavLink>
+                        <MobileNavLink href="/credits" icon={CreditCardIcon} onClick={onClose}>Credits</MobileNavLink>
+                        <MobileNavLink href="/carbon" icon={CalculatorIcon} onClick={onClose}>Carbon</MobileNavLink>
+                        <MobileNavLink href="/reports" icon={DocumentChartBarIcon} onClick={onClose}>Reports</MobileNavLink>
+                        <MobileNavLink href="/dashboard/company/users" icon={UsersIcon} onClick={onClose}>Company</MobileNavLink>
+                        {user?.companyRole === 'OWNER' && (
+                            <>
+                                <MobileNavLink href="/dashboard/owner/users" icon={UsersIcon} onClick={onClose}>Users</MobileNavLink>
+        
+                            </>
+                        )}
+                        {user?.globalAdmin && (
+                            <MobileNavLink href="/dashboard/admin" icon={CogIcon} onClick={onClose}>Admin</MobileNavLink>
+                        )}
+                    </div>
 
         {/* User Profile Section */}
         <div className="pt-4 border-t border-emerald-200">
@@ -269,9 +250,6 @@ const MobileAuthenticatedNav = ({ user, logout, onClose }: { user: AuthUser | nu
                         <AcademicCapIcon className="w-4 h-4 mr-1" />
                         {user?.companyRole || 'User'}
                     </div>
-                    {user?.companyName && (
-                        <div className="text-xs text-gray-500">{user.companyName}</div>
-                    )}
                 </div>
             </div>
             
@@ -317,16 +295,6 @@ const MobileNavLink = ({ href, children, icon: Icon, onClick }: { href: string; 
     >
         {Icon && <Icon className="w-6 h-6 group-hover:scale-110 transition-transform duration-200" />}
         <span className="text-xs text-center">{children}</span>
-    </Link>
-);
-
-const NavDropdownLink = ({ href, children, icon: Icon }: { href: string; children: React.ReactNode; icon?: any }) => (
-    <Link 
-        href={href} 
-        className="flex items-center space-x-3 px-4 py-2 text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-600 transition-colors duration-200"
-    >
-        {Icon && <Icon className="w-4 h-4" />}
-        <span>{children}</span>
     </Link>
 );
 

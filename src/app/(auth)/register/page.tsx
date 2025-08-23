@@ -3,12 +3,12 @@ import Link from 'next/link';
 
 export default function RegisterPage() {
     return (
-        <div className="space-y-4">
-            {/* Compact Logo and branding */}
-            <div className="text-center relative">
+        <div className="w-full h-full flex flex-col justify-center">
+            {/* Header Section */}
+            <div className="text-center mb-8">
                 <Link href="/" className="group inline-block">
                     <div className="relative">
-                        <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-emerald-600 to-green-600 bg-clip-text text-transparent mb-1 group-hover:scale-105 transition-transform duration-300">
+                        <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-emerald-600 to-green-600 bg-clip-text text-transparent mb-3 group-hover:scale-105 transition-transform duration-300">
                             GreenSuite
                         </h1>
                         {/* Subtle glow effect */}
@@ -16,9 +16,9 @@ export default function RegisterPage() {
                     </div>
                 </Link>
                 
-                <div className="space-y-0.5">
-                    <h2 className="text-lg font-bold text-gray-800">Join the revolution</h2>
-                    <p className="text-xs text-gray-600">Create your account and make a difference</p>
+                <div className="space-y-2">
+                    <h2 className="text-2xl font-bold text-gray-800">Join the revolution</h2>
+                    <p className="text-lg text-gray-600">Create your account and make a difference</p>
                 </div>
                 
                 {/* Minimal decorative elements */}
@@ -26,17 +26,22 @@ export default function RegisterPage() {
                 <div className="absolute -bottom-0.5 -right-0.5 w-1 h-1 bg-emerald-500/50 rounded-full animate-bounce"></div>
             </div>
 
-            {/* Register Form */}
-            <RegisterForm />
+            {/* Main Content - Full Width */}
+            <div className="w-full max-w-2xl mx-auto">
+                {/* Register Form */}
+                <div className="mb-8">
+                    <RegisterForm />
+                </div>
 
-            {/* Compact Footer */}
-            <div className="text-center">
-                <div className="text-xs text-gray-600">
-                    <span>Already have an account? </span>
-                    <Link href="/login" className="font-semibold text-emerald-600 hover:text-emerald-700 transition-colors relative group">
-                        <span className="relative z-10">Sign in</span>
-                        <div className="absolute inset-0 bg-emerald-100/50 rounded scale-0 group-hover:scale-100 transition-transform duration-200"></div>
-                    </Link>
+                {/* Footer */}
+                <div className="text-center mt-8">
+                    <div className="text-base text-gray-600">
+                        <span>Already have an account? </span>
+                        <Link href="/login" className="font-semibold text-emerald-600 hover:text-emerald-700 transition-colors relative group">
+                            <span className="relative z-10">Sign in</span>
+                            <div className="absolute inset-0 bg-emerald-100/50 rounded scale-0 group-hover:scale-100 transition-transform duration-200"></div>
+                        </Link>
+                    </div>
                 </div>
             </div>
         </div>

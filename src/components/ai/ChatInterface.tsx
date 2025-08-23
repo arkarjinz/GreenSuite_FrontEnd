@@ -32,13 +32,6 @@ interface CreditInfo {
     subscriptionTier?: string;
     maxCredits?: number;
     canReceiveCredits?: boolean;
-    
-    // Auto-refill info
-    autoRefillEnabled?: boolean;
-    lastAutoRefill?: string;
-    nextAutoRefill?: string;
-    autoRefillRate?: number; // credits per refill
-    autoRefillInterval?: number; // minutes between refills
 }
 
 // Helper function to handle message content - backend now handles intelligent formatting
@@ -74,7 +67,10 @@ export default function ChatInterface() {
     const [creditInfo, setCreditInfo] = useState<CreditInfo | null>(null);
     const [showCreditWarning, setShowCreditWarning] = useState(false);
     const [showAutoRefillInfo, setShowAutoRefillInfo] = useState(false);
+    const [selectedModel, setSelectedModel] = useState('RinV1');
+    const [showModelSelector, setShowModelSelector] = useState(false);
     const hasWelcomeMessageRef = useRef(false);
+    const modelSelectorRef = useRef<HTMLDivElement>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -82,6 +78,23 @@ export default function ChatInterface() {
     useEffect(() => {
         setIsClient(true);
     }, []);
+
+    // Click outside handler for model selector
+    useEffect(() => {
+        function handleClickOutside(event: MouseEvent) {
+            if (modelSelectorRef.current && !modelSelectorRef.current.contains(event.target as Node)) {
+                setShowModelSelector(false);
+            }
+        }
+
+        if (showModelSelector) {
+            document.addEventListener('mousedown', handleClickOutside);
+        }
+
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [showModelSelector]);
 
     // Debug logging for authentication state
     useEffect(() => {
@@ -118,65 +131,141 @@ export default function ChatInterface() {
         }
     }, [user, isInitialized]);
 
-    // Auto-refill timer - check every minute for credit updates
+    // Credit refresh timer - check every 5 minutes for credit updates
     useEffect(() => {
-        if (!user?.id || !creditInfo?.autoRefillEnabled) return;
+        if (!user?.id) return;
 
         const interval = setInterval(() => {
-            loadCreditInfo(); // Refresh credit info to check for auto-refill
-        }, 60000); // Check every minute
+            loadCreditInfo(); // Refresh credit info
+        }, 5 * 60 * 1000); // Check every 5 minutes
 
         return () => clearInterval(interval);
-    }, [user?.id, creditInfo?.autoRefillEnabled]);
+    }, [user?.id]);
+
+    // Debug credit info changes
+    useEffect(() => {
+        console.log('💰 Credit info state changed:', {
+            hasCreditInfo: !!creditInfo,
+            creditInfo: creditInfo,
+            user: user?.id
+        });
+    }, [creditInfo, user?.id]);
 
     // Load user's credit information
     const loadCreditInfo = async () => {
-        if (!user?.id) return;
+        if (!user?.id) {
+            console.log('❌ No user ID available for credit loading');
+            return;
+        }
 
         try {
             console.log('💰 Loading credit info for user:', user.id);
+            
+            // Check if we have valid authentication tokens
+            const accessToken = localStorage.getItem('accessToken');
+            const refreshToken = localStorage.getItem('refreshToken');
+            console.log('🔑 Auth status:', { 
+                hasAccessToken: !!accessToken, 
+                hasRefreshToken: !!refreshToken,
+                accessTokenLength: accessToken?.length || 0
+            });
+            
+            if (!accessToken) {
+                console.warn('⚠️ No access token found, cannot load credits');
+                setCreditInfo({
+                    currentCredits: 0,
+                    chatCost: 2,
+                    canChat: false,
+                    possibleChats: 0,
+                    isLowOnCredits: true,
+                    warning: 'Authentication required to load credit information.'
+                });
+                return;
+            }
+            
             const response = await aiCreditsApi.getCreditBalance();
             console.log('💰 Credit API response:', response);
             
-            if (response.success && response.data) {
-                const creditData = response.data;
+            // Handle different response formats from backend
+            let creditData = null;
+            
+            if (response && response.data) {
+                creditData = response.data;
+            } else if (response && response.status === 'success' && response.data) {
+                creditData = response.data;
+            } else if (response && typeof response === 'object') {
+                // Sometimes the response might be the data directly
+                creditData = response;
+            }
+            
+            console.log('💰 Processed credit data:', creditData);
+            
+            if (creditData && (creditData.currentCredits !== undefined || creditData.chatCost !== undefined)) {
                 console.log('💰 Setting credit info:', creditData);
                 setCreditInfo(creditData);
                 
                 // Show warning if low on credits
                 if (creditData.isLowOnCredits && creditData.currentCredits > 0) {
                     setShowCreditWarning(true);
-                    setTimeout(() => setShowCreditWarning(false), 8000); // Hide after 8 seconds
-                }
-
-                // Show auto-refill info if enabled
-                if (creditData.autoRefillEnabled) {
-                    setShowAutoRefillInfo(true);
-                    setTimeout(() => setShowAutoRefillInfo(false), 5000); // Hide after 5 seconds
+                    setTimeout(() => setShowCreditWarning(false), 8000);
                 }
             } else {
-                console.warn('⚠️ Credit API returned no data, using defaults');
+                console.warn('⚠️ Credit API returned no valid data, using defaults');
+                console.warn('⚠️ Response structure:', JSON.stringify(response, null, 2));
                 // Set reasonable defaults if API returns no data
                 setCreditInfo({
-                    currentCredits: 100, // Generous default
-                    chatCost: 1, // Low cost
-                    canChat: true, // Allow chat by default
-                    possibleChats: 100,
-                    isLowOnCredits: false,
-                    autoRefillEnabled: false
+                    currentCredits: 50,
+                    chatCost: 2,
+                    canChat: true,
+                    possibleChats: 25,
+                    isLowOnCredits: false
                 });
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error('❌ Error loading credit info:', error);
-            // Set generous default credit info if API fails - don't block user from chatting
-            setCreditInfo({
-                currentCredits: 100, // Generous default credits
-                chatCost: 1, // Low chat cost
-                canChat: true, // Always allow chat when API fails
-                possibleChats: 100,
-                isLowOnCredits: false,
-                autoRefillEnabled: false
-            });
+            
+            // Handle 401 Unauthorized specifically
+            if (error.message?.includes('401') || error.response?.status === 401) {
+                console.error('🚫 Authentication failed - clearing tokens and showing error');
+                // Don't clear tokens here, let the axios interceptor handle it
+                setCreditInfo({
+                    currentCredits: 0,
+                    chatCost: 2,
+                    canChat: false,
+                    possibleChats: 0,
+                    isLowOnCredits: true,
+                    warning: 'Authentication expired. Please refresh the page to re-login.'
+                });
+                setShowCreditWarning(true);
+                setTimeout(() => setShowCreditWarning(false), 10000);
+                return;
+            }
+            
+            // Handle specific error cases
+            if (error.message?.includes('Insufficient')) {
+                // User has no credits
+                setCreditInfo({
+                    currentCredits: 0,
+                    chatCost: 2,
+                    canChat: false,
+                    possibleChats: 0,
+                    isLowOnCredits: true,
+                    warning: 'You have no credits remaining. Please purchase more to continue chatting.'
+                });
+                setShowCreditWarning(true);
+                setTimeout(() => setShowCreditWarning(false), 10000);
+            } else {
+                // Other errors - set safe defaults but warn user
+                console.warn('⚠️ Error loading credits, using defaults. User may still be able to chat.');
+                setCreditInfo({
+                    currentCredits: 50,
+                    chatCost: 2,
+                    canChat: true,
+                    possibleChats: 25,
+                    isLowOnCredits: false,
+                    warning: 'Could not load credit information. Some features may be limited.'
+                });
+            }
         }
     };
 
@@ -449,29 +538,85 @@ export default function ChatInterface() {
             return;
         }
 
-        // Check if user has enough credits - only block if we have explicit credit info AND can't chat
-        if (creditInfo && creditInfo.canChat === false && creditInfo.currentCredits < creditInfo.chatCost) {
-            console.log('❌ Credit check failed:', { 
-                canChat: creditInfo.canChat, 
-                currentCredits: creditInfo.currentCredits, 
-                chatCost: creditInfo.chatCost 
-            });
-            addMessage({
-                id: `no_credits_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-                content: `I'm quite sorry, but it appears you don't have sufficient credits to continue our environmental discussion. You need ${creditInfo.chatCost} credits per chat, but you only have ${creditInfo.currentCredits}. Perhaps you could consider purchasing additional credits so we might continue learning about sustainability together?`,
-                isUser: false,
-                timestamp: new Date()
-            });
-            return;
+        // Enhanced credit checking - check both API response and local state
+        try {
+            console.log('💰 Checking credits before sending message...');
+            const creditCheckResponse = await aiCreditsApi.canUserChat();
+            console.log('💰 Credit check response:', creditCheckResponse);
+            
+            // Check if the response has the expected structure
+            const canChat = creditCheckResponse?.data?.canChat ?? creditCheckResponse?.canChat;
+            const currentCredits = creditCheckResponse?.data?.currentCredits ?? creditCheckResponse?.currentCredits ?? 0;
+            const chatCost = creditCheckResponse?.data?.chatCost ?? creditCheckResponse?.chatCost ?? 2;
+            
+            console.log('💰 Parsed credit info:', { canChat, currentCredits, chatCost });
+            
+            // If the API explicitly says user cannot chat, but they have credits, double-check
+            if (canChat === false && currentCredits >= chatCost) {
+                console.log('⚠️ Backend says user cannot chat but they have sufficient credits. Proceeding anyway...');
+                // Continue with the chat since user actually has credits
+            } else if (canChat === false && currentCredits < chatCost) {
+                console.log('❌ Backend credit check failed - insufficient credits:', { currentCredits, chatCost });
+                addMessage({
+                    id: `no_credits_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+                    content: `💸 **Oh dear!** It seems you don't have enough credits to continue our environmental chat. Each conversation costs **${chatCost} credits**, but you only have **${currentCredits} credits** remaining.\n\n🌱 Don't worry! Your credits will automatically refill every 5 minutes. Please wait a moment and try again.`,
+                    isUser: false,
+                    timestamp: new Date()
+                });
+                
+                // Refresh credit info to update UI
+                await loadCreditInfo();
+                return;
+            }
+            
+            // Also check local credit info as backup
+            if (creditInfo && creditInfo.canChat === false && creditInfo.currentCredits < creditInfo.chatCost) {
+                console.log('❌ Local credit check failed:', creditInfo);
+                addMessage({
+                    id: `no_credits_local_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+                    content: `💸 **Insufficient Credits!** You need **${creditInfo.chatCost || 2} credits** per conversation, but you only have **${creditInfo.currentCredits || 0} credits** remaining.\n\n🌱 Please purchase more credits to continue our environmental discussions!`,
+                    isUser: false,
+                    timestamp: new Date()
+                });
+                return;
+            }
+            
+            console.log('✅ Credit check passed, proceeding with message');
+            
+        } catch (creditError: any) {
+            console.error('❌ Error checking credits:', creditError);
+            
+            // If credit check fails due to insufficient credits, block the chat
+            if (creditError.message?.includes('Insufficient') || creditError.message?.includes('credits')) {
+                addMessage({
+                    id: `no_credits_error_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+                    content: `💸 **No Credits Remaining!** I'm afraid you've run out of credits to continue our environmental discussions.\n\n🌱 Don't worry! Your credits will automatically refill every 5 minutes. Please wait a moment and try again.`,
+                    isUser: false,
+                    timestamp: new Date()
+                });
+                
+                // Update credit info to reflect no credits
+                setCreditInfo(prev => ({
+                    currentCredits: 0,
+                    chatCost: prev?.chatCost || 2,
+                    canChat: false,
+                    possibleChats: 0,
+                    isLowOnCredits: true,
+                    warning: prev?.warning,
+                    creditsUsed: prev?.creditsUsed,
+                    remainingCredits: prev?.remainingCredits,
+                    totalCreditsPurchased: prev?.totalCreditsPurchased,
+                    totalCreditsUsed: prev?.totalCreditsUsed,
+                    subscriptionTier: prev?.subscriptionTier,
+                    maxCredits: prev?.maxCredits,
+                    canReceiveCredits: prev?.canReceiveCredits
+                }));
+                return;
+            }
+            
+            // For other errors, warn but allow the chat to proceed
+            console.warn('⚠️ Credit check failed, but allowing chat to proceed:', creditError.message);
         }
-        
-        // Log credit status for debugging
-        console.log('💰 Credit status before sending message:', {
-            hasCreditInfo: !!creditInfo,
-            canChat: creditInfo?.canChat,
-            currentCredits: creditInfo?.currentCredits,
-            chatCost: creditInfo?.chatCost
-        });
 
         // Check if we have valid tokens
         const accessToken = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
@@ -514,8 +659,15 @@ export default function ChatInterface() {
                 await sendSyncMessage(currentInput);
             }
 
-            // Refresh credit info after successful chat
+            // Refresh credit info after successful chat to show updated balance
+            setTimeout(async () => {
+                console.log('🔄 Refreshing credit info after successful chat...');
+                await loadCreditInfo();
+            }, 500);
+            
+            // Also refresh immediately
             await loadCreditInfo();
+            
         } catch (error: any) {
             console.error('❌ Chat error details:', {
                 message: error.message,
@@ -524,10 +676,35 @@ export default function ChatInterface() {
                 stack: error.stack
             });
             
-            // Don't let chat errors cause logout - handle gracefully
+            // Handle specific error cases
             let errorMessage = "I'm experiencing some difficulty with my systems at the moment... Perhaps we could try again in a little while?";
             
-            if (error.message?.includes('Authentication')) {
+            if (error.message?.includes('Insufficient credits') || error.message?.includes('credits')) {
+                errorMessage = "💸 **Oops!** It looks like you've run out of credits during our conversation. Please purchase more credits to continue our environmental discussions!";
+                
+                // Update credit info to reflect no credits
+                setCreditInfo(prev => ({
+                    currentCredits: 0,
+                    chatCost: prev?.chatCost || 2,
+                    canChat: false,
+                    possibleChats: 0,
+                    isLowOnCredits: true,
+                    warning: prev?.warning,
+                    creditsUsed: prev?.creditsUsed,
+                    remainingCredits: prev?.remainingCredits,
+                    totalCreditsPurchased: prev?.totalCreditsPurchased,
+                    totalCreditsUsed: prev?.totalCreditsUsed,
+                    subscriptionTier: prev?.subscriptionTier,
+                    maxCredits: prev?.maxCredits,
+                    canReceiveCredits: prev?.canReceiveCredits
+                }));
+                
+                // Refund the user's message since it failed
+                setTimeout(async () => {
+                    await loadCreditInfo();
+                }, 1000);
+                
+            } else if (error.message?.includes('Authentication')) {
                 errorMessage = "There seems to be an authentication issue... Please try refreshing the page.";
             } else if (error.message?.includes('Network')) {
                 errorMessage = "There appears to be a network connectivity issue... Please check your connection and try again when convenient.";
@@ -764,20 +941,41 @@ export default function ChatInterface() {
     const getEnvironmentalTip = async () => {
         setIsLoading(true);
         try {
-            const response = await aiChatApi.getEnvironmentalTips();
-            let tipContent = '';
-            
-            if (response?.data?.tip) {
-                tipContent = response.data.tip;
-            } else if (response?.tip) {
-                tipContent = response.tip;
-            } else {
-                tipContent = "Here's a thoughtful tip: begin by measuring your carbon footprint properly. It's quite meaningful to understand your environmental impact.";
-            }
+            // Enhanced collection of environmental tips
+            const tips = [
+                "🌱 **Eco Tip:** Consider using energy-efficient LED bulbs - they use up to 90% less energy than traditional incandescent bulbs and last much longer.",
+                "🌿 **Eco Tip:** Try to reduce your meat consumption by having one meatless day per week. This can significantly reduce your carbon footprint.",
+                "🌊 **Eco Tip:** Use reusable water bottles and coffee cups instead of disposable ones. Every small change makes a difference.",
+                "🚶 **Eco Tip:** Consider walking, cycling, or using public transportation when possible. It's good for both you and the environment.",
+                "🍃 **Eco Tip:** Start composting your food waste. It's a wonderful way to reduce landfill waste and create nutrient-rich soil for plants.",
+                "☀️ **Eco Tip:** Switch to renewable energy sources if available in your area. Solar and wind power are becoming more accessible.",
+                "💧 **Eco Tip:** Reduce your water usage by taking shorter showers and fixing any leaks. Every drop counts.",
+                "📦 **Eco Tip:** Choose products with minimal packaging or packaging that can be recycled. This helps reduce waste significantly.",
+                "🌳 **Eco Tip:** Plant native trees and flowers in your garden. They provide habitat for local wildlife and help clean the air.",
+                "🛒 **Eco Tip:** Consider the environmental impact of your purchases. Sometimes spending a bit more on sustainable products pays off in the long run.",
+                "🌡️ **Eco Tip:** Adjust your thermostat by just 1-2 degrees. You'll save energy and likely won't even notice the difference.",
+                "🧺 **Eco Tip:** Wash clothes in cold water when possible. 90% of the energy used by washing machines goes to heating water.",
+                "🔌 **Eco Tip:** Unplug electronics when not in use. Many devices continue to draw power even when turned off.",
+                "🌱 **Eco Tip:** Grow your own herbs and vegetables. Even a small windowsill garden can reduce your carbon footprint.",
+                "🚗 **Eco Tip:** Keep your car tires properly inflated. This can improve fuel efficiency by up to 3%.",
+                "🌿 **Eco Tip:** Use natural cleaning products. Vinegar, baking soda, and lemon can clean most things effectively.",
+                "📱 **Eco Tip:** Extend the life of your electronics by taking good care of them. Consider repairing instead of replacing.",
+                "🌍 **Eco Tip:** Support local businesses and farmers markets. This reduces transportation emissions and supports your community.",
+                "🌊 **Eco Tip:** Avoid single-use plastics like straws, cutlery, and bags. Bring your own reusable alternatives.",
+                "🌳 **Eco Tip:** Participate in local environmental initiatives like tree planting or beach cleanups.",
+                "💡 **Eco Tip:** Use natural light whenever possible. Open curtains during the day and turn off unnecessary lights.",
+                "🌱 **Eco Tip:** Choose seasonal and local produce. It's fresher, often cheaper, and has a lower carbon footprint.",
+                "🚿 **Eco Tip:** Install low-flow showerheads and faucets. They can reduce water usage by up to 50%.",
+                "🌿 **Eco Tip:** Use cloth napkins and towels instead of paper products. They're more elegant and eco-friendly.",
+                "🌍 **Eco Tip:** Educate yourself and others about environmental issues. Knowledge is the first step toward change."
+            ];
+
+            // Select a random tip
+            const randomTip = tips[Math.floor(Math.random() * tips.length)];
 
             addMessage({
                 id: `tip_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-                content: tipContent,
+                content: randomTip,
                 isUser: false,
                 timestamp: new Date()
             });
@@ -785,7 +983,7 @@ export default function ChatInterface() {
             console.error('Error getting environmental tip:', error);
             addMessage({
                 id: `tip_error_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-                content: "I'm having some difficulty retrieving an environmental tip at the moment... But here's a meaningful thought: Focus on understanding your daily environmental impact and how small changes can make a beautiful difference.",
+                content: "🌱 **Eco Tip:** Consider using energy-efficient LED bulbs - they use up to 90% less energy than traditional incandescent bulbs and last much longer.",
                 isUser: false,
                 timestamp: new Date()
             });
@@ -793,6 +991,77 @@ export default function ChatInterface() {
             setIsLoading(false);
         }
     };
+
+    const getQuotes = async () => {
+        setIsLoading(true);
+        try {
+            // Collection of environmental quotes and meaningful life quotes
+            const quotes = [
+                // Environmental Quotes
+                "🌱 *'The Earth is what we all have in common.'* - Wendell Berry",
+                "🌿 *'In nature, nothing exists alone.'* - Rachel Carson",
+                "🌍 *'The environment is where we all meet; where we all have a mutual interest; it is the one thing all of us share.'* - Lady Bird Johnson",
+                "🌳 *'What we are doing to the forests of the world is but a mirror reflection of what we are doing to ourselves and to one another.'* - Mahatma Gandhi",
+                "🌊 *'The sea, once it casts its spell, holds one in its net of wonder forever.'* - Jacques Cousteau",
+                "🌲 *'The clearest way into the Universe is through a forest wilderness.'* - John Muir",
+                "🌻 *'Look deep into nature, and then you will understand everything better.'* - Albert Einstein",
+                "🌺 *'Nature does not hurry, yet everything is accomplished.'* - Lao Tzu",
+                "🌿 *'The best time to plant a tree was 20 years ago. The second best time is now.'* - Chinese Proverb",
+                "🌍 *'We do not inherit the earth from our ancestors; we borrow it from our children.'* - Native American Proverb",
+                "🌱 *'The greatest threat to our planet is the belief that someone else will save it.'* - Robert Swan",
+                "🌿 *'Conservation is a state of harmony between men and land.'* - Aldo Leopold",
+                "🌊 *'Water is the driving force of all nature.'* - Leonardo da Vinci",
+                "🌳 *'Forests are the lungs of our land, purifying the air and giving fresh strength to our people.'* - Franklin D. Roosevelt",
+                "🌻 *'The environment and the economy are really both two sides of the same coin.'* - Hillary Clinton",
+                "🌺 *'We won't have a society if we destroy the environment.'* - Margaret Mead",
+                "🌿 *'The only way forward, if we are going to improve the quality of the environment, is to get everybody involved.'* - Richard Rogers",
+                "🌍 *'Earth provides enough to satisfy every man's needs, but not every man's greed.'* - Mahatma Gandhi",
+                "🌱 *'The future will either be green or not at all.'* - Bob Brown",
+                "🌿 *'We are living on this planet as if we had another one to go to.'* - Terri Swearingen",
+                
+                // Meaningful Life Quotes
+                "🌟 *'The purpose of life is not to be happy. It is to be useful, to be honorable, to be compassionate, to have it make some difference that you have lived and lived well.'* - Ralph Waldo Emerson",
+                "💫 *'Life is not about finding yourself. Life is about creating yourself.'* - George Bernard Shaw",
+                "✨ *'The only way to do great work is to love what you do.'* - Steve Jobs",
+                "🌙 *'In the middle of difficulty lies opportunity.'* - Albert Einstein",
+                "⭐ *'Success is not final, failure is not fatal: it is the courage to continue that counts.'* - Winston Churchill",
+                "🌟 *'The journey of a thousand miles begins with one step.'* - Lao Tzu",
+                "💫 *'What you get by achieving your goals is not as important as what you become by achieving your goals.'* - Zig Ziglar",
+                "✨ *'The mind is everything. What you think you become.'* - Buddha",
+                "🌙 *'Happiness is not something ready made. It comes from your own actions.'* - Dalai Lama",
+                "⭐ *'The best way to predict the future is to create it.'* - Peter Drucker",
+                "🌟 *'Life is 10% what happens to you and 90% how you react to it.'* - Charles R. Swindoll",
+                "💫 *'The only limit to our realization of tomorrow will be our doubts of today.'* - Franklin D. Roosevelt",
+                "✨ *'Believe you can and you're halfway there.'* - Theodore Roosevelt",
+                "🌙 *'It does not matter how slowly you go as long as you do not stop.'* - Confucius",
+                "⭐ *'The future belongs to those who believe in the beauty of their dreams.'* - Eleanor Roosevelt",
+                
+
+            ];
+
+            // Select a random quote
+            const randomQuote = quotes[Math.floor(Math.random() * quotes.length)];
+
+            addMessage({
+                id: `quote_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+                content: randomQuote,
+                isUser: false,
+                timestamp: new Date()
+            });
+        } catch (error) {
+            console.error('Error getting quote:', error);
+            addMessage({
+                id: `quote_error_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+                content: "🌱 *'The Earth is what we all have in common.'* - Wendell Berry",
+                isUser: false,
+                timestamp: new Date()
+            });
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+
 
     const handleKeyPress = (e: React.KeyboardEvent) => {
         if (e.key === 'Enter' && !e.shiftKey) {
@@ -1021,28 +1290,7 @@ export default function ChatInterface() {
                 </div>
             )}
 
-            {/* Auto-Refill Info Banner */}
-            {showAutoRefillInfo && creditInfo?.autoRefillEnabled && (
-                <div className="bg-gradient-to-r from-green-400 to-emerald-400 text-white px-6 py-3 shadow-lg">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-3">
-                            <SparklesIcon className="w-6 h-6" />
-                            <div>
-                                <p className="font-semibold">Auto-Refill Active! 🎉</p>
-                                <p className="text-sm text-green-100">
-                                    You'll receive {creditInfo.autoRefillRate || 1} credit every {creditInfo.autoRefillInterval || 5} minutes
-                                </p>
-                            </div>
-                        </div>
-                        <button
-                            onClick={() => setShowAutoRefillInfo(false)}
-                            className="p-1 hover:bg-white/20 rounded"
-                        >
-                            <XMarkIcon className="w-5 h-5" />
-                        </button>
-                    </div>
-                </div>
-            )}
+
 
             {/* Header */}
             <div className="flex-shrink-0 bg-white border-b border-gray-200 px-6 py-4 shadow-sm">
@@ -1054,13 +1302,16 @@ export default function ChatInterface() {
                             <div className="flex items-center space-x-2">
                                 <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                                 <span className="text-sm text-gray-500">Online</span>
+                                <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
+                                    {selectedModel}
+                                </span>
                             </div>
                         </div>
                     </div>
                     
                     <div className="flex items-center space-x-3">
                         {/* Credit Display */}
-                        {creditInfo && (
+                        {creditInfo ? (
                             <div className="flex items-center space-x-3">
                                 <div className="flex items-center space-x-2 px-3 py-2 bg-gradient-to-r from-green-50 to-emerald-50 rounded-full border border-green-200">
                                     <CreditCardIcon className="w-4 h-4 text-green-600" />
@@ -1083,6 +1334,15 @@ export default function ChatInterface() {
                                         Get More
                                     </button>
                                 )}
+                                
+                                
+                            </div>
+                        ) : (
+                            <div className="flex items-center space-x-2 px-3 py-2 bg-gray-50 rounded-full border border-gray-200">
+                                <CreditCardIcon className="w-4 h-4 text-gray-400" />
+                                <span className="text-sm font-medium text-gray-500">
+                                    Loading credits...
+                                </span>
                             </div>
                         )}
 
@@ -1113,6 +1373,8 @@ export default function ChatInterface() {
                     </div>
                 </div>
             </div>
+
+
 
             {/* Messages Area - Scrollable only inside this container */}
             <div className="flex-1 overflow-hidden">
@@ -1184,7 +1446,7 @@ export default function ChatInterface() {
                                             <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
                                         </div>
                                         <span className="text-sm text-gray-500">
-                                            {streamingMode === 'streaming' ? 'Rin is typing...' : 'Rin is thinking...'}
+                                            {streamingMode === 'streaming' ? `${selectedModel} is typing...` : `${selectedModel} is thinking...`}
                                         </span>
                                     </div>
                                 </div>
@@ -1210,13 +1472,83 @@ export default function ChatInterface() {
                             Eco Tip (Free)
                     </button>
                     <button
-                        onClick={() => {/* Add sustainability facts */}}
+                        onClick={getQuotes}
                         disabled={isLoading}
                         className="flex items-center px-3 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-full text-sm transition-all font-medium"
                     >
                         <SparklesIcon className="w-4 h-4 mr-1" />
-                            Fun Facts (Free)
+                            Quotes (Free)
                     </button>
+
+                    {/* Model Selector */}
+                    <div className="relative" ref={modelSelectorRef}>
+                        <button
+                            onClick={() => setShowModelSelector(!showModelSelector)}
+                            className="flex items-center px-3 py-2 bg-purple-50 hover:bg-purple-100 text-purple-700 rounded-full text-sm transition-all font-medium"
+                        >
+                            <CpuChipIcon className="w-4 h-4 mr-1" />
+                            {selectedModel}
+                            <svg 
+                                className={`w-4 h-4 ml-1 transition-transform ${showModelSelector ? 'rotate-180' : ''}`}
+                                fill="none" 
+                                stroke="currentColor" 
+                                viewBox="0 0 24 24"
+                            >
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                            </svg>
+                        </button>
+
+                        {/* Model Dropdown */}
+                        {showModelSelector && (
+                            <div className="absolute bottom-full mb-2 left-0 bg-white border border-gray-200 rounded-lg shadow-lg p-2 min-w-[200px] z-10">
+                                {/* Arrow pointing down */}
+                                <div className="absolute top-full left-4 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-200"></div>
+                                <div className="absolute top-full left-4 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-white" style={{ marginTop: '-1px' }}></div>
+                                <div className="text-xs font-medium text-gray-500 mb-2 px-2">Select Model</div>
+                                <div className="space-y-1">
+                                    <button
+                                        onClick={() => {
+                                            setSelectedModel('RinV1');
+                                            setShowModelSelector(false);
+                                        }}
+                                        className={`w-full text-left px-3 py-2 rounded-md text-sm transition-all ${
+                                            selectedModel === 'RinV1'
+                                                ? 'bg-green-100 text-green-700 font-medium'
+                                                : 'text-gray-700 hover:bg-gray-50'
+                                        }`}
+                                    >
+                                        <div className="flex items-center justify-between">
+                                            <span>RinV1</span>
+                                            {selectedModel === 'RinV1' && (
+                                                <svg className="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                                </svg>
+                                            )}
+                                        </div>
+                                    </button>
+                                    <button
+                                        disabled
+                                        className="w-full text-left px-3 py-2 rounded-md text-sm text-gray-400 bg-gray-50 cursor-not-allowed opacity-50"
+                                    >
+                                        <div className="flex items-center justify-between">
+                                            <span>RinV2</span>
+                                            <span className="text-xs text-gray-400">(Upcoming)</span>
+                                        </div>
+                                    </button>
+                                    <button
+                                        disabled
+                                        className="w-full text-left px-3 py-2 rounded-md text-sm text-gray-400 bg-gray-50 cursor-not-allowed opacity-50"
+                                    >
+                                        <div className="flex items-center justify-between">
+                                            <span>RinV3</span>
+                                            <span className="text-xs text-gray-400">(Upcoming)</span>
+                                        </div>
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
                     </div>
 
                     {/* Credit Info */}
@@ -1246,8 +1578,8 @@ export default function ChatInterface() {
                                 onKeyPress={handleKeyPress}
                                 placeholder={
                                     creditInfo && creditInfo.canChat === false 
-                                        ? "Need more credits to chat with Rin..."
-                                        : "Message Rin about sustainability..."
+                                        ? `Need more credits to chat with ${selectedModel}...`
+                                        : `Message ${selectedModel} about sustainability...`
                                 }
                                 className={`w-full px-6 py-4 bg-gray-50 border border-gray-200 rounded-3xl focus:ring-2 focus:ring-green-500 focus:border-green-500 focus:bg-white resize-none transition-all text-gray-900 placeholder-gray-500 ${
                                     creditInfo && creditInfo.canChat === false ? 'opacity-60' : ''
@@ -1279,8 +1611,8 @@ export default function ChatInterface() {
                 {/* Helpful Hints */}
                 <div className="mt-2 text-xs text-gray-400 text-center">
                     {creditInfo && creditInfo.canChat === false 
-                        ? `You need ${creditInfo.chatCost} AI credits to chat with Rin`
-                        : "Ask about carbon footprints, renewable energy, or sustainable practices"
+                        ? `You need ${creditInfo.chatCost} AI credits to chat with ${selectedModel}`
+                        : `Ask ${selectedModel} about carbon footprints, renewable energy, or sustainable practices`
                     }
                 </div>
             </div>

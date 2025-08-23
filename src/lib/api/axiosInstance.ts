@@ -2,8 +2,15 @@ import axios from 'axios';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080';
 
+console.log('🌐 API Base URL:', API_BASE_URL);
+console.log('🌐 Environment check:', {
+    NEXT_PUBLIC_API_BASE_URL: process.env.NEXT_PUBLIC_API_BASE_URL,
+    NODE_ENV: process.env.NODE_ENV
+});
+
 const axiosInstance = axios.create({
     baseURL: API_BASE_URL,
+    timeout: 10000, // 10 second timeout
     headers: {
         'Content-Type': 'application/json',
     },
@@ -12,21 +19,96 @@ const axiosInstance = axios.create({
 // Add request interceptor to inject token
 axiosInstance.interceptors.request.use(
     config => {
-        const token = localStorage.getItem('accessToken');
-        if (token) {
-            config.headers.Authorization = `Bearer ${token}`;
+        // Only add Authorization header for authenticated endpoints
+        const publicEndpoints = [
+            '/',
+            '/actuator/health',
+            '/api/auth/health',
+            '/health',
+            '/api/auth/login',
+            '/api/auth/register',
+            '/api/auth/refresh',
+            '/api/auth/reapply'
+        ];
+        
+        // Check if this is an owner endpoint (requires authentication)
+        const isOwnerEndpoint = config.url?.includes('/api/owner/');
+        
+        // Special case: /api/public/company/users requires authentication
+        const isCompanyUsersEndpoint = config.url?.includes('/api/public/company/users');
+        
+        const isPublicEndpoint = publicEndpoints.some(endpoint => 
+            config.url?.includes(endpoint) || config.url === endpoint
+        );
+        
+        // Add Authorization header for authenticated endpoints OR special endpoints
+        if (!isPublicEndpoint || isOwnerEndpoint || isCompanyUsersEndpoint) {
+            const token = localStorage.getItem('accessToken');
+            if (token) {
+                config.headers.Authorization = `Bearer ${token}`;
+            }
         }
+        
+        // Log outgoing requests for debugging
+        if (config.url?.includes('/api/auth/register')) {
+            console.log('🚀 Outgoing registration request:', {
+                url: config.url,
+                method: config.method,
+                data: config.data,
+                headers: config.headers
+            });
+        }
+        
+        // Log company users requests for debugging
+        if (config.url?.includes('/api/public/company/users')) {
+            console.log('🚀 Outgoing company users request:', {
+                url: config.url,
+                method: config.method,
+                headers: config.headers,
+                hasAuthHeader: !!config.headers.Authorization
+            });
+        }
+        
+        // Log owner endpoint requests for debugging (excluding rejected users)
+        if (config.url?.includes('/api/owner/') && !config.url?.includes('/rejected-users')) {
+            console.log('🚀 Outgoing owner request:', {
+                url: config.url,
+                method: config.method,
+                headers: config.headers,
+                hasAuthHeader: !!config.headers.Authorization
+            });
+        }
+        
         return config;
     },
     error => {
+        console.error('❌ Request interceptor error:', error);
         return Promise.reject(error);
     }
 );
 
 // Add response interceptor for better error handling
 axiosInstance.interceptors.response.use(
-    response => response,
+    response => {
+        // Log successful responses for debugging
+        if (response.config.url?.includes('/api/auth/register')) {
+            console.log('✅ Registration response received:', {
+                status: response.status,
+                data: response.data
+            });
+        }
+        return response;
+    },
     async error => {
+        // Log error responses for debugging
+        if (error.config?.url?.includes('/api/auth/register')) {
+            console.error('❌ Registration response error:', {
+                status: error.response?.status,
+                data: error.response?.data,
+                message: error.message
+            });
+        }
+        
         const originalRequest = error.config;
 
         // Handle 401 errors (token expired) but be more careful about redirects

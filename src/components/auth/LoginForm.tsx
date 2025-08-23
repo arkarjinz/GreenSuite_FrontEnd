@@ -43,6 +43,12 @@ export default function LoginForm() {
                 return;
             }
             
+            if (result.status === 'rejected') {
+                // Redirect to reapply page for rejected users
+                router.push('/reapply');
+                return;
+            }
+            
             setFormError(result.message || 'Login failed. Please try again.');
             
         } catch (error: any) {

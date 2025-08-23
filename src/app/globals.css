@@ -1,22 +1,5 @@
 @import "tailwindcss";
 
-input[type=number]::-webkit-inner-spin-button,
-input[type=number]::-webkit-outer-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
-}
-input[type=number] {
-  -moz-appearance: textfield;
-}
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-.animate-spin {
-  animation: spin 1s linear infinite;
-}
 /* Custom animations */
 @keyframes fade-in {
   from {
@@ -45,3 +28,4 @@ input[type=number] {
 .animate-slide-up {
   animation: slide-up 0.8s ease-out;
 }
+

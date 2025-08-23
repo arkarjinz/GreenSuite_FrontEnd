@@ -4,7 +4,7 @@ import { Suspense } from "react";
 import Navbar from "@/components/layout/Navbar";
 import ModelShowcase from "@/components/3d/ModelShowcase";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
-import ErrorBoundary from "@/components/ui/ErrorBoundary";
+
 
 function ModelShowcaseWrapper() {
   return (
@@ -28,7 +28,7 @@ function FallbackContent() {
         <h1 className="text-4xl md:text-6xl font-bold bg-gradient-to-r from-emerald-600 to-green-600 bg-clip-text text-transparent mb-6">
           Rin Kazuki
         </h1>
-        <p className="text-lg md:text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
+        <p className="text-lg md:text-xl text-gray-900 dark:text-gray-100 mb-8 max-w-3xl mx-auto">
           Rin Kazuki is our environmental sustainability teacher with an elegant, contemplative personality inspired by Yukari Yukino. 
           Sophisticated, thoughtful, and deeply caring — Rin guides you through environmental topics with graceful wisdom and poetic insights.
         </p>
@@ -57,7 +57,6 @@ export default function Home() {
       <Navbar />
 
       <main className="flex-1">
-        <ErrorBoundary fallback={<FallbackContent />}>
           <Suspense fallback={
             <div className="flex items-center justify-center min-h-[60vh]">
               <LoadingSpinner />
@@ -65,7 +64,8 @@ export default function Home() {
           }>
             <ModelShowcaseWrapper />
           </Suspense>
-        </ErrorBoundary>
+          
+
       </main>
     </div>
   );

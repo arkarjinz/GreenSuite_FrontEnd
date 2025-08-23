@@ -15,6 +15,7 @@ export default function ReapplyPage() {
     const [companies, setCompanies] = useState<any[]>([]);
     const [searchQuery, setSearchQuery] = useState('');
     const [token, setToken] = useState('');
+    const [isInitializing, setIsInitializing] = useState(true);
     const [rejectionInfo, setRejectionInfo] = useState<{
         count: number;
         remaining: number;
@@ -29,6 +30,8 @@ export default function ReapplyPage() {
     });
 
     useEffect(() => {
+        const initializePage = async () => {
+            try {
         // Get reapplication token from URL params or localStorage
         const urlToken = searchParams.get('token');
         const storedToken = localStorage.getItem('reapplicationToken');
@@ -54,7 +57,16 @@ export default function ReapplyPage() {
         }
 
         // Load companies
-        loadCompanies();
+                await loadCompanies();
+            } catch (error) {
+                console.error('Failed to initialize page:', error);
+                setError('Failed to load page data. Please refresh and try again.');
+            } finally {
+                setIsInitializing(false);
+            }
+        };
+
+        initializePage();
     }, [searchParams]);
 
     const loadCompanies = async () => {
@@ -171,10 +183,32 @@ export default function ReapplyPage() {
         }
     };
 
-    if (!token && !error) {
+    // Show loading spinner while initializing
+    if (isInitializing) {
         return (
             <div className="min-h-screen bg-gradient-to-br from-green-50 via-blue-50 to-purple-50 flex items-center justify-center p-4">
                 <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-green-600"></div>
+            </div>
+        );
+    }
+
+    // Show error if no token is available
+    if (!token) {
+        return (
+            <div className="min-h-screen bg-gradient-to-br from-green-50 via-blue-50 to-purple-50 flex items-center justify-center p-4">
+                <div className="max-w-lg w-full text-center">
+                    <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <ExclamationTriangleIcon className="w-8 h-8 text-red-600" />
+                    </div>
+                    <h1 className="text-xl font-bold text-gray-900 mb-2">Access Error</h1>
+                    <p className="text-gray-600 mb-4">No reapplication token found. Please contact your company administrator.</p>
+                    <Button
+                        variant="outline"
+                        onClick={() => router.push('/login')}
+                    >
+                        Back to Login
+                    </Button>
+                </div>
             </div>
         );
     }

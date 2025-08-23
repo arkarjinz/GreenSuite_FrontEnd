@@ -35,23 +35,13 @@ export default function AuthLayout({
             </div>
 
             {/* Main Content Container */}
-            <div className="relative z-10 w-full max-w-sm mx-auto p-4">
-                {/* Clean Card with Subtle Effects */}
-                <div className="bg-white/95 backdrop-blur-sm rounded-3xl shadow-xl border border-gray-100/50 p-4 md:p-6 relative overflow-hidden max-h-[90vh] overflow-y-auto">
-                    {/* Subtle inner glow */}
-                    <div className="absolute inset-0 bg-gradient-to-br from-emerald-50/30 via-transparent to-green-50/20 rounded-3xl"></div>
-                    
-                    {/* Content */}
-                    <div className="relative z-10">
-                        {children}
-                    </div>
-                    
-                    {/* Corner accent elements */}
-                    <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl from-emerald-100/40 to-transparent rounded-bl-3xl"></div>
-                    <div className="absolute bottom-0 left-0 w-12 h-12 bg-gradient-to-tr from-green-100/30 to-transparent rounded-tr-3xl"></div>
+            <div className="relative z-10 w-full h-full p-4">
+                {/* Content without card background */}
+                <div className="relative z-10 h-full">
+                    {children}
                 </div>
                 
-                {/* Floating elements around card */}
+                {/* Floating elements around content */}
                 <div className="absolute -top-4 -left-4 w-8 h-8 bg-emerald-200/50 rounded-full blur-sm animate-bounce-slow"></div>
                 <div className="absolute -bottom-3 -right-3 w-6 h-6 bg-green-300/40 rounded-full blur-sm animate-pulse"></div>
             </div>

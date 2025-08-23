@@ -96,9 +96,10 @@ export default function Model3D({
     <div className="w-full h-full">
       <Canvas dpr={[1, 1.5]} camera={{ position: [0, 0.4, 2.5], fov: 40, near: 0.01, far: 1000 }}>
         <Suspense fallback={<LoaderOverlay />}>
-          <ambientLight intensity={0.6} />
-          <directionalLight position={[10, 10, 5]} intensity={1} />
-          <Environment preset="city" />
+          <ambientLight intensity={0.4} />
+          <directionalLight position={[10, 10, 5]} intensity={1.2} />
+          <directionalLight position={[-10, -10, -5]} intensity={0.8} />
+          <pointLight position={[0, 10, 0]} intensity={0.5} />
 
           {/* Center and auto-fit the model into the camera view */}
           <Bounds fit observe margin={fitMargin}>

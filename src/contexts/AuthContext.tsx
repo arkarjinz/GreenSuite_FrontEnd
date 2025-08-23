@@ -204,7 +204,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 
                 console.log('🔐 AuthContext: Reapplication token exists:', !!reapplicationToken);
                 console.log('🔐 AuthContext: Rejection info exists:', !!rejectionInfo);
-             if (reapplicationToken && rejectionInfo) {
+                
+                if (reapplicationToken && rejectionInfo) {
                     try {
                         const rejectionData = JSON.parse(rejectionInfo);
                         // If user has both token and rejection info, they can reapply
@@ -272,7 +273,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                     message: response.message 
                 };
             }
-             // Handle rejected status
+            
+            // Handle rejected status
             if (response.status === 'rejected') {
                 console.log('🔐 AuthContext: Handling rejected user login', response);
                 
@@ -301,6 +303,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                     message: response.message 
                 };
             }
+            
             // Handle other cases
             return { 
                 success: false, 

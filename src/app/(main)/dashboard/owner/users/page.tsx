@@ -17,6 +17,12 @@ export default function OwnerUsersPage() {
     const [rejectReason, setRejectReason] = useState('');
     const [showRejectModal, setShowRejectModal] = useState(false);
     const [selectedUserId, setSelectedUserId] = useState<string>('');
+    const [isClient, setIsClient] = useState(false);
+
+    // Ensure client-side rendering
+    useEffect(() => {
+        setIsClient(true);
+    }, []);
 
     // Redirect if not owner
     useEffect(() => {
@@ -35,7 +41,7 @@ export default function OwnerUsersPage() {
                     // Ensure each user has a valid ID for React keys
                     const usersWithValidIds = users.map((user, index) => ({
                         ...user,
-                        id: user.id || `user-${index}-${Date.now()}` // Fallback ID if missing
+                        id: user.id || `user-${index}` // Fallback ID if missing
                     }));
                     setPendingUsers(usersWithValidIds);
                 })
@@ -90,7 +96,7 @@ export default function OwnerUsersPage() {
         }
     };
 
-    if (isLoading || loadingUsers) {
+    if (!isClient || isLoading || loadingUsers) {
         return <LoadingSpinner />;
     }
 

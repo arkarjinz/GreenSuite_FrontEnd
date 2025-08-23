@@ -134,9 +134,23 @@ export const authApi = {
             errors.push('Invalid email format');
         }
         
-        // Check password length
-        if (payload.password && payload.password.length < 8) {
-            errors.push('Password must be at least 8 characters long');
+        // Check password requirements (matching backend validation)
+        if (payload.password) {
+            if (payload.password.length < 10) {
+                errors.push('Password must be at least 10 characters long');
+            }
+            if (!/(?=.*[a-z])/.test(payload.password)) {
+                errors.push('Password must contain at least one lowercase letter');
+            }
+            if (!/(?=.*[A-Z])/.test(payload.password)) {
+                errors.push('Password must contain at least one uppercase letter');
+            }
+            if (!/(?=.*\d)/.test(payload.password)) {
+                errors.push('Password must contain at least one digit');
+            }
+            if (!/(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?])/.test(payload.password)) {
+                errors.push('Password must contain at least one special character');
+            }
         }
         
         // Check role-specific requirements
@@ -147,11 +161,8 @@ export const authApi = {
             if (!payload.industry || payload.industry.trim().length === 0) {
                 errors.push('Industry is required for owners');
             }
-        } else {
-            if (!payload.companyId || payload.companyId.trim().length === 0) {
-                errors.push('Company selection is required for non-owners');
-            }
         }
+        // Note: companyId is not required for non-owners as the backend handles company selection differently
         
         return {
             isValid: errors.length === 0,
@@ -171,7 +182,27 @@ export const authApi = {
                 throw new Error(`Registration validation failed: ${validation.errors.join(', ')}`);
             }
             
-        const response = await axiosInstance.post('/api/auth/register', registerDto);
+            // Clean the payload to match backend expectations
+            const cleanPayload: { [key: string]: any } = {
+                firstName: registerDto.firstName,
+                lastName: registerDto.lastName,
+                userName: registerDto.userName,
+                email: registerDto.email,
+                password: registerDto.password,
+                companyRole: registerDto.companyRole,
+                companyName: registerDto.companyName,
+                companyAddress: registerDto.companyAddress,
+                industry: registerDto.industry
+            };
+            
+            // Remove undefined/null values
+            Object.keys(cleanPayload).forEach(key => {
+                if (cleanPayload[key] === undefined || cleanPayload[key] === null || cleanPayload[key] === '') {
+                    delete cleanPayload[key];
+                }
+            });
+            
+        const response = await axiosInstance.post('/api/auth/register', cleanPayload);
             console.log('✅ Registration successful:', response.data);
         return response.data;
         } catch (error: any) {
@@ -183,7 +214,9 @@ export const authApi = {
             // Extract error message from response
             let errorMessage = 'Registration failed. Please try again.';
             
-            if (error.response?.data) {
+            if (error.response?.status === 500) {
+                errorMessage = 'Server error occurred. Please check if the backend is running and try again.';
+            } else if (error.response?.data) {
                 const backendError = error.response.data;
                 if (backendError.message) {
                     errorMessage = backendError.message;
@@ -212,7 +245,8 @@ export const authApi = {
             console.log('✅ Login response received:', {
                 status: response.status,
                 headers: response.headers,
-                dataKeys: Object.keys(response.data || {})
+                dataKeys: Object.keys(response.data || {}),
+                fullData: response.data
             });
             
             // Handle both success and pending approval responses
@@ -244,6 +278,20 @@ export const authApi = {
                     data: responseData.data,
                     user: responseData.data.user,
                     message: responseData.data.message || 'Account pending approval'
+                };
+            }
+            
+            // Handle rejected status responses
+            if (responseData.data && responseData.data.status === 'rejected') {
+                console.log('❌ User rejected, handling reapplication');
+                return {
+                    success: false,
+                    status: 'rejected',
+                    data: responseData.data,
+                    user: responseData.data.user,
+                    message: responseData.data.message || 'Account rejected',
+                    reapplicationToken: responseData.data.reapplicationToken,
+                    rejectionInfo: responseData.data.rejectionInfo
                 };
             }
             
@@ -310,6 +358,13 @@ export const authApi = {
         companyRole: string; 
         password: string; 
     }): Promise<any> => {
+        console.log('🔄 Sending reapply request:', {
+            token: reapplyDto.token ? 'Token present' : 'No token',
+            tokenLength: reapplyDto.token?.length,
+            companyName: reapplyDto.companyName,
+            companyRole: reapplyDto.companyRole
+        });
+        
         const response = await axiosInstance.post('/api/auth/reapply', reapplyDto);
         return response.data;
     }
@@ -732,10 +787,66 @@ export const aiCreditsApi = {
     // Check if user can chat (has enough credits)
     canUserChat: async (): Promise<any> => {
         try {
+            console.log('🔍 Checking if user can chat...');
             const response = await axiosInstance.get('/api/credits/can-chat');
+            console.log('🔍 Can chat response:', response.data);
+            
+            // If the response indicates user cannot chat, double-check with balance
+            if (response.data && response.data.canChat === false) {
+                console.log('⚠️ Backend says user cannot chat, double-checking balance...');
+                const balanceResponse = await aiCreditsApi.getCreditBalance();
+                console.log('🔍 Balance check response:', balanceResponse);
+                
+                // If user actually has credits, override the canChat response
+                if (balanceResponse.success && balanceResponse.data) {
+                    const currentCredits = balanceResponse.data.currentCredits || 0;
+                    const chatCost = balanceResponse.data.chatCost || 2;
+                    
+                    if (currentCredits >= chatCost) {
+                        console.log('✅ User has sufficient credits, overriding canChat response');
+                        return {
+                            success: true,
+                            data: {
+                                canChat: true,
+                                currentCredits: currentCredits,
+                                chatCost: chatCost,
+                                possibleChats: Math.floor(currentCredits / chatCost)
+                            }
+                        };
+                    }
+                }
+            }
+            
             return response.data;
         } catch (error: any) {
             console.error('Failed to check chat availability:', error);
+            
+            // If the can-chat endpoint fails, try to get balance directly
+            try {
+                console.log('🔄 Can-chat failed, trying balance check...');
+                const balanceResponse = await aiCreditsApi.getCreditBalance();
+                
+                if (balanceResponse.success && balanceResponse.data) {
+                    const currentCredits = balanceResponse.data.currentCredits || 0;
+                    const chatCost = balanceResponse.data.chatCost || 2;
+                    const canChat = currentCredits >= chatCost;
+                    
+                    console.log('✅ Balance check successful:', { currentCredits, chatCost, canChat });
+                    
+                    return {
+                        success: true,
+                        data: {
+                            canChat: canChat,
+                            currentCredits: currentCredits,
+                            chatCost: chatCost,
+                            possibleChats: Math.floor(currentCredits / chatCost)
+                        }
+                    };
+                }
+            } catch (balanceError) {
+                console.error('Balance check also failed:', balanceError);
+            }
+            
             throw new Error(error.response?.data?.message || 'Failed to check chat availability');
         }
     },
@@ -897,21 +1008,7 @@ export const ownerApi = {
         return response.data;
     },
 
-    getRejectedUsers: async (): Promise<any[]> => {
-        // For now, we get rejected users through company stats
-        // The backend returns rejected users count but not the actual users
-        // This would need a new backend endpoint: GET /api/owner/rejected-users
-        try {
-            const response = await axiosInstance.get('/api/owner/company-stats');
-            const stats = response.data;
-            // The backend currently only returns count, not actual rejected users
-            // Return empty array for now until backend endpoint is implemented
-            return [];
-        } catch (error) {
-            console.error('Failed to get rejected users:', error);
-            throw new Error('Rejected users data is not currently available through the API. Check your pending users for any reapplicants.');
-        }
-    },
+
     
     approveUser: async (userId: string): Promise<any> => {
         const response = await axiosInstance.post(`/api/owner/approve-user/${userId}`);
@@ -934,7 +1031,80 @@ export const ownerApi = {
     getCompanyStats: async (): Promise<any> => {
         const response = await axiosInstance.get('/api/owner/company-stats');
         return response.data;
+    },
+
+    getCompanyUsers: async (): Promise<any[]> => {
+        try {
+            // Debug: Check if user is authenticated
+            const token = localStorage.getItem('accessToken');
+            const user = localStorage.getItem('user');
+            console.log('🔍 getCompanyUsers - Token present:', !!token);
+            console.log('🔍 getCompanyUsers - User data present:', !!user);
+            
+            if (user) {
+                try {
+                    const userData = JSON.parse(user);
+                    console.log('🔍 getCompanyUsers - User role:', userData.companyRole);
+                    console.log('🔍 getCompanyUsers - User company ID:', userData.companyId);
+                } catch (e) {
+                    console.error('🔍 getCompanyUsers - Failed to parse user data:', e);
+                }
+            }
+            
+            // Check if token exists and is valid
+            if (!token) {
+                throw new Error('No authentication token found. Please log in again.');
+            }
+            
+            // Decode JWT token to check its contents (without verification)
+            try {
+                const tokenParts = token.split('.');
+                if (tokenParts.length === 3) {
+                    const payload = JSON.parse(atob(tokenParts[1]));
+                    console.log('🔍 getCompanyUsers - JWT payload:', payload);
+                    console.log('🔍 getCompanyUsers - JWT roles/authorities:', payload.roles || payload.authorities || payload.role);
+                    
+                    // Check if token is expired
+                    const currentTime = Math.floor(Date.now() / 1000);
+                    if (payload.exp && payload.exp < currentTime) {
+                        console.error('🔍 getCompanyUsers - JWT token is expired!');
+                        throw new Error('Authentication token has expired. Please log in again.');
+                    }
+                }
+            } catch (e: any) {
+                console.error('🔍 getCompanyUsers - Failed to decode JWT:', e);
+                if (e.message && e.message.includes('expired')) {
+                    throw e;
+                }
+            }
+            
+            console.log('🚀 getCompanyUsers - Making request to /api/public/company/users');
+            const response = await axiosInstance.get('/api/public/company/users');
+            console.log('✅ getCompanyUsers - Response received:', response.status, response.data);
+            return response.data;
+        } catch (error: any) {
+            console.error('❌ getCompanyUsers - Request failed:', error);
+            
+            // Log detailed error information for debugging
+            if (error.response) {
+                console.error('❌ getCompanyUsers - Response status:', error.response.status);
+                console.error('❌ getCompanyUsers - Response data:', error.response.data);
+                console.error('❌ getCompanyUsers - Response headers:', error.response.headers);
+            } else if (error.request) {
+                console.error('❌ getCompanyUsers - No response received:', error.request);
+            } else {
+                console.error('❌ getCompanyUsers - Error setting up request:', error.message);
+            }
+            
+            // Check if it's a 500 error, which likely means user has no company
+            if (error.response?.status === 500) {
+                throw new Error('User is not associated with a company. Please contact an administrator.');
+            }
+            
+            throw new Error('Failed to fetch company users');
+        }
     }
+
 };
 
 // Enhanced AI Chat API with streaming support
