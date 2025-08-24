@@ -24,3 +24,24 @@ export interface CarbonGoal {
   createdAt?: string; // or Date, if you parse it
   updatedAt?: string;
 }
+// Add by Htet Htet
+export interface GoalSummaryResponse {
+  message: string;
+  results: {
+    electricity?: CategoryResult;
+    fuel?: CategoryResult;
+    water?: CategoryResult;
+    waste?: CategoryResult;
+  };
+  electricityGoalMet: boolean;
+  fuelGoalMet: boolean;
+  waterGoalMet: boolean;
+  wasteGoalMet: boolean;
+}
+
+interface CategoryResult {
+  reductionPercent: number;
+  remainingPercent: number;
+  dataAvailable: boolean;
+  goalMet: boolean;
+}
