@@ -22,6 +22,7 @@ import {
     ClockIcon,
     CogIcon
 } from '@heroicons/react/24/outline';
+import { StarIcon } from 'lucide-react';
 
 const Navbar = () => {
     const { user, isAuthenticated, isLoading, logout } = useAuth();
@@ -152,14 +153,14 @@ const AuthenticatedNav = ({ user, logout }: { user: AuthUser | null; logout: () 
         <div className="flex items-center space-x-2">
             <NavLink href="/dashboard" icon={HomeIcon}>Dashboard</NavLink>
             <NavLink href="/ai-chat" icon={ChatBubbleLeftRightIcon}>AI Chat</NavLink>
-            <NavLink href="/credits" icon={CreditCardIcon}>Credits</NavLink>
+            
            
              {user?.companyRole === 'OWNER' && (
 
             <NavLink href="/resource/input" icon={CalculatorIcon}>Carbon</NavLink>)}
              {user?.companyRole === 'OWNER' && (
 
-            <NavLink href="/resource/goal" icon={DocumentChartBarIcon}>Goal Track</NavLink>)}
+            <NavLink href="/resource/goal" icon={StarIcon}>Goal Track</NavLink>)}
             <NavLink href="/report" icon={DocumentChartBarIcon}>Reports</NavLink>
             <NavLink href="/dashboard/company/users" icon={UsersIcon}>Company</NavLink>
             {user?.companyRole === 'OWNER' && (
@@ -230,13 +231,13 @@ const MobileAuthenticatedNav = ({ user, logout, onClose }: { user: AuthUser | nu
                             <div className="grid grid-cols-2 gap-3">
                         <MobileNavLink href="/dashboard" icon={HomeIcon} onClick={onClose}>Dashboard</MobileNavLink>
                         <MobileNavLink href="/ai-chat" icon={ChatBubbleLeftRightIcon} onClick={onClose}>AI Chat</MobileNavLink>
-                        <MobileNavLink href="/credits" icon={CreditCardIcon} onClick={onClose}>Credits</MobileNavLink>
+                        
                          {user?.companyRole === 'OWNER' && (
 
                         <MobileNavLink href="/resource/input" icon={CalculatorIcon} onClick={onClose}>Carbon</MobileNavLink>)}
                          {user?.companyRole === 'OWNER' && (
 
-                        <NavLink href="/resource/goal" icon={DocumentChartBarIcon}>Goal Track</NavLink>)}
+                        <MobileNavLink href="/resource/goal" icon={StarIcon}>Goal Track</MobileNavLink>)}
                         <MobileNavLink href="/report" icon={DocumentChartBarIcon} onClick={onClose}>Reports</MobileNavLink>
                         <MobileNavLink href="/dashboard/company/users" icon={UsersIcon} onClick={onClose}>Company</MobileNavLink>
                         {user?.companyRole === 'OWNER' && (
