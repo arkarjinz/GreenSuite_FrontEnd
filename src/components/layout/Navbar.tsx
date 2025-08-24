@@ -153,6 +153,7 @@ const AuthenticatedNav = ({ user, logout }: { user: AuthUser | null; logout: () 
             <NavLink href="/dashboard" icon={HomeIcon}>Dashboard</NavLink>
             <NavLink href="/ai-chat" icon={ChatBubbleLeftRightIcon}>AI Chat</NavLink>
             <NavLink href="/credits" icon={CreditCardIcon}>Credits</NavLink>
+           
              {user?.companyRole === 'OWNER' && (
 
             <NavLink href="/resource/input" icon={CalculatorIcon}>Carbon</NavLink>)}
@@ -167,6 +168,7 @@ const AuthenticatedNav = ({ user, logout }: { user: AuthUser | null; logout: () 
                     
                 </>
             )}
+             <NavLink href="/profile" icon={UserIcon}>Profile</NavLink>
             {user?.globalAdmin && (
                 <NavLink href="/dashboard/admin" icon={CogIcon}>Admin</NavLink>
             )}

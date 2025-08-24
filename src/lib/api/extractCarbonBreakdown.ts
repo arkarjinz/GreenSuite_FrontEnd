@@ -7,7 +7,7 @@ export const fetchCarbonTotalsByYearAndMonth = async (
   year: string,
   month: string
 ) => {
-  const token = localStorage.getItem("token");
+  const token = localStorage.getItem("accessToken");
   if (!token) {
     throw new Error("No auth token found");
   }

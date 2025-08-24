@@ -115,7 +115,7 @@ const fetchGoalData = async (month: number) => {
   if (!companyId) return;
 
   try {
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem("accessToken");
     if (!token) throw new Error("No token found");
 
     const monthStr = String(month).padStart(2, '0');
