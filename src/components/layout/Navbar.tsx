@@ -236,7 +236,6 @@ const MobileAuthenticatedNav = ({ user, logout, onClose }: { user: AuthUser | nu
 
                         <MobileNavLink href="/resource/input" icon={CalculatorIcon} onClick={onClose}>Carbon</MobileNavLink>)}
                          {user?.companyRole === 'OWNER' && (
-
                         <MobileNavLink href="/resource/goal" icon={StarIcon}>Goal Track</MobileNavLink>)}
                         <MobileNavLink href="/report" icon={DocumentChartBarIcon} onClick={onClose}>Reports</MobileNavLink>
                         <MobileNavLink href="/dashboard/company/users" icon={UsersIcon} onClick={onClose}>Company</MobileNavLink>
