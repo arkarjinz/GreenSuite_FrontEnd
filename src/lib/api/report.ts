@@ -5,6 +5,6 @@ import axiosInstance from "@/lib/api/axiosInstance";// this already includes JWT
 import type { CarbonActivity } from '@/types/report';
 
 export const fetchReportData = async (): Promise<CarbonActivity[]> => {
-  const response = await axiosInstance.get('/api/reports'); // You should have this endpoint set up
+  const response = await axiosInstance.get('/api/reports?include=user,company'); // You should have this endpoint set up
   return response.data;
 };

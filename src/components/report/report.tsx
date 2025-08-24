@@ -288,11 +288,23 @@ const sortGoalsByDate = (goals: CarbonGoal[]) => {
                     </div>
                   </th>
                   <th className="px-4 py-4 font-semibold drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.2)]">
+      <div className="flex items-center gap-2">
+        <Building size={16} />
+        Company Name
+      </div>
+    </th>
+                  <th className="px-4 py-4 font-semibold drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.2)]">
                     <div className="flex items-center gap-2">
                       <User size={16} />
                       User ID
                     </div>
                   </th>
+                  <th className="px-4 py-4 font-semibold drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.2)]">
+      <div className="flex items-center gap-2">
+        <User size={16} />
+        User Name
+      </div>
+    </th>
                   <th className="px-4 py-4 font-semibold drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.2)]">
                     <div className="flex items-center gap-2">
                       <Calendar size={16} />
@@ -343,7 +355,13 @@ const sortGoalsByDate = (goals: CarbonGoal[]) => {
                       key={activity.id}
                       className="border-b border-gray-100 hover:bg-gray-50 transition-colors duration-200"
                     >
+                      <td className="px-4 py-4 font-medium text-gray-900">
+          {activity.company?.name || activity.companyId}
+        </td>
                       <td className="px-4 py-4 font-medium text-gray-900">{activity.companyId}</td>
+                      <td className="px-4 py-4">
+          {activity.user ? `${activity.user.firstName} ${activity.user.lastName}` : activity.userId}
+        </td>
                       <td className="px-4 py-4">{activity.userId}</td>
                       <td className="px-4 py-4 font-medium">{activity.month}</td>
                       <td className="px-4 py-4 font-medium">{activity.year}</td>
@@ -426,11 +444,23 @@ const sortGoalsByDate = (goals: CarbonGoal[]) => {
               <thead className="text-xs text-gray-700 uppercase bg-gray-50 rounded-t-lg">
                 <tr>
                   <th className="px-4 py-4 font-semibold drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.2)]">
+      <div className="flex items-center gap-2">
+        <Building size={16} />
+        Company Name
+      </div>
+    </th>
+                  <th className="px-4 py-4 font-semibold drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.2)]">
                     <div className="flex items-center gap-2">
                       <Building size={16} />
                       Company ID
                     </div>
                   </th>
+                   <th className="px-4 py-4 font-semibold drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.2)]">
+      <div className="flex items-center gap-2">
+        <User size={16} />
+        User Name
+      </div>
+    </th>
                   <th className="px-4 py-4 font-semibold drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.2)]">
                     <div className="flex items-center gap-2">
                       <User size={16} />
@@ -478,7 +508,13 @@ const sortGoalsByDate = (goals: CarbonGoal[]) => {
                     key={goal.id}
                     className="border-b border-gray-100 hover:bg-gray-50 transition-colors duration-200"
                   >
+                    <td className="px-4 py-4 font-medium text-gray-900">
+        {goal.company?.name || goal.companyId}
+      </td>
                     <td className="px-4 py-4 font-medium text-gray-900">{goal.companyId}</td>
+                     <td className="px-4 py-4">
+        {goal.user ? `${goal.user.firstName} ${goal.user.lastName}` : goal.userId}
+      </td>
                     <td className="px-4 py-4">{goal.userId || '-'}</td>
                     <td className="px-4 py-4 font-medium">{goal.month}</td>
                     <td className="px-4 py-4 font-medium">{goal.year}</td>

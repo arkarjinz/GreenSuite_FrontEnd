@@ -13,4 +13,14 @@ export interface CarbonActivity {
   fuelType: string;
   disposalMethod: string;
   submittedAt: string; // ISO format
+   // Add these new fields
+  user?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+  };
+  company?: {
+    id: string;
+    name: string;
+  };
 }

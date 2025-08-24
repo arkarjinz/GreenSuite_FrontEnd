@@ -20,9 +20,10 @@ import {
     AcademicCapIcon,
     CreditCardIcon,
     ClockIcon,
-    CogIcon
+    CogIcon,
+    StarIcon
 } from '@heroicons/react/24/outline';
-import { StarIcon } from 'lucide-react';
+
 
 const Navbar = () => {
     const { user, isAuthenticated, isLoading, logout } = useAuth();
@@ -237,7 +238,7 @@ const MobileAuthenticatedNav = ({ user, logout, onClose }: { user: AuthUser | nu
                         <MobileNavLink href="/resource/input" icon={CalculatorIcon} onClick={onClose}>Carbon</MobileNavLink>)}
                          {user?.companyRole === 'OWNER' && (
 
-                        <MobileNavLink href="/resource/goal" icon={StarIcon}>Goal Track</MobileNavLink>)}
+                        <MobileNavLink href="/resource/goal" icon={StarIcon}  onClick={onClose}>Goal Track</MobileNavLink>)}
                         <MobileNavLink href="/report" icon={DocumentChartBarIcon} onClick={onClose}>Reports</MobileNavLink>
                         <MobileNavLink href="/dashboard/company/users" icon={UsersIcon} onClick={onClose}>Company</MobileNavLink>
                         {user?.companyRole === 'OWNER' && (
