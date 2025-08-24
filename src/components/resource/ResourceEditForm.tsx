@@ -142,10 +142,10 @@ useEffect(() => {
 }, [formData.fuelType, formData.unit]);
   const handleChange = (field: keyof FormData, value: string) => {
     const limits = {
-    electricity: 3000,
-    water: 3000,
-    fuel: 3000,
-    waste: 3000
+    electricity: 2000,
+    water: 2000,
+    fuel: 2000,
+    waste: 2000
   };
 
   // Check if this field has a limit and if value exceeds it
