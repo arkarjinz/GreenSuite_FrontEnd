@@ -36,20 +36,20 @@ export default function DashboardPage() {
     }
 
     return (
-        <div className="min-h-screen" style={{
+        <div className="w-full h-screen" style={{
             background: "radial-gradient(circle, rgba(87, 199, 133, 1) 0%, rgba(255, 255, 255, 1) 100%)"
         }}>
             {/* Main Dashboard Content */}
-            <div className="p-4 max-w-7xl mx-auto">
+            <div className="max-w-7xl mx-auto min-h-screen">
                 <div className="mb-8">
-                    <h1 className="text-3xl font-bold text-gray-900">
+                    <h1 className="text-3xl font-bold text-gray-900 mt-0">
                         Welcome, {user.firstName || 'User'}!
                     </h1>
                     <p className="mt-2 text-gray-600">Manage your environmental sustainability initiatives</p>
                 </div>
 
                 {/* Charts Section - Full width */}
-                <div className="w-full p-4 h-full grid md:grid-cols-3 gird-cols-1 gap-4">
+                <div className="w-full p-4 h-full grid md:grid-cols-3 grid-cols-1 gap-4">
                     <ChartToggle />
                 </div>
             </div>
