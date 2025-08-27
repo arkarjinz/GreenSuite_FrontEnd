@@ -8,7 +8,7 @@ import type { CarbonGoal } from "@/types/goalreport"; // or whatever type you us
   return res.json();
 }*/
 export const fetchGoalData = async (): Promise<CarbonGoal[]> => {
-  const response = await axiosInstance.get('/api/carbon/goals');
+  const response = await axiosInstance.get('/api/carbon/goals?include=user,company');
   return response.data;
 };
 // New function to fetch a single goal by ID

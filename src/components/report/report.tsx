@@ -41,10 +41,15 @@ const [editingResource, setEditingResource] = useState(false); // Add this state
   useEffect(() => {
     const loadData = async () => {
       try {
-        const activities = await fetchReportData();
+       const activities = await fetchReportData();
         const goalsData = await fetchGoalData();
         setData(activities);
         setGoals(goalsData);
+       //the upper one is working original one
+       
+      
+      
+     
       } catch (error) {
         console.error('Failed to fetch report data:', error);
       } finally {
@@ -90,7 +95,7 @@ const downloadActivitiesCSV = (month: string, year: string, region: string) => {
     [''],
     ['Company ID', 'User ID', 'Activity Type', 'Input Value', 'Input Unit', 'Footprint (kg CO₂)', 'Fuel Type', 'Disposal Method', 'Submitted At'],
     ...filteredData.map(activity => [
-      activity.companyId,
+      
       activity.userId,
       activity.activityType,
       activity.value,
@@ -281,18 +286,15 @@ const sortGoalsByDate = (goals: CarbonGoal[]) => {
             <table className="w-full text-sm text-left text-gray-600">
               <thead className="text-xs text-gray-700 uppercase bg-gray-50 rounded-t-lg">
                 <tr>
-                  <th className="px-4 py-4 font-semibold drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.2)]">
-                    <div className="flex items-center gap-2">
-                      <Building size={16} />
-                      Company ID
-                    </div>
-                  </th>
+                  
+                  
                   <th className="px-4 py-4 font-semibold drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.2)]">
                     <div className="flex items-center gap-2">
                       <User size={16} />
                       User ID
                     </div>
                   </th>
+                 
                   <th className="px-4 py-4 font-semibold drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.2)]">
                     <div className="flex items-center gap-2">
                       <Calendar size={16} />
@@ -343,8 +345,9 @@ const sortGoalsByDate = (goals: CarbonGoal[]) => {
                       key={activity.id}
                       className="border-b border-gray-100 hover:bg-gray-50 transition-colors duration-200"
                     >
-                      <td className="px-4 py-4 font-medium text-gray-900">{activity.companyId}</td>
+                      
                       <td className="px-4 py-4">{activity.userId}</td>
+                      
                       <td className="px-4 py-4 font-medium">{activity.month}</td>
                       <td className="px-4 py-4 font-medium">{activity.year}</td>
                       <td className="px-4 py-4">
@@ -425,18 +428,14 @@ const sortGoalsByDate = (goals: CarbonGoal[]) => {
             <table className="w-full text-sm text-left text-gray-600">
               <thead className="text-xs text-gray-700 uppercase bg-gray-50 rounded-t-lg">
                 <tr>
-                  <th className="px-4 py-4 font-semibold drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.2)]">
-                    <div className="flex items-center gap-2">
-                      <Building size={16} />
-                      Company ID
-                    </div>
-                  </th>
+                   
                   <th className="px-4 py-4 font-semibold drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.2)]">
                     <div className="flex items-center gap-2">
                       <User size={16} />
                       User ID
                     </div>
                   </th>
+                  
                   <th className="px-4 py-4 font-semibold drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.2)]">Month</th>
                   <th className="px-4 py-4 font-semibold drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.2)]">Year</th>
                   <th className="px-4 py-4 font-semibold drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.2)]">
@@ -478,8 +477,11 @@ const sortGoalsByDate = (goals: CarbonGoal[]) => {
                     key={goal.id}
                     className="border-b border-gray-100 hover:bg-gray-50 transition-colors duration-200"
                   >
-                    <td className="px-4 py-4 font-medium text-gray-900">{goal.companyId}</td>
+                    
+                    
+                     
                     <td className="px-4 py-4">{goal.userId || '-'}</td>
+                    
                     <td className="px-4 py-4 font-medium">{goal.month}</td>
                     <td className="px-4 py-4 font-medium">{goal.year}</td>
                     <td className="px-4 py-4 font-medium text-yellow-700">{goal.targetElectricity ?? '-'}</td>

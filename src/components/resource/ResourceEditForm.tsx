@@ -7,7 +7,7 @@ import { Calendar, Globe2, Zap, Fuel, Droplet, Trash2, ArrowLeft } from "lucide-
 import Button from "@/components/ui/Button";
 import { updateFootprint, getResourceDataForMonth } from '@/lib/api/carbon'; // You'll need to implement these
 import { useRouter, useSearchParams } from 'next/navigation';
-
+import { Loading } from '@/components/ui/Loading'; // add this import
 type ActivityType = "ELECTRICITY" | "WATER" | "WASTE" | "FUEL";
 type VolumeUnit = "LITERS" | "CUBIC_METERS";
 type DisposalMethod = "recycled" | "landfilled" | "incinerated";
@@ -70,7 +70,7 @@ const ResourceEditForm: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [originalData, setOriginalData] = useState<ExistingResourceData | null>(null);
-
+const [isRedirecting, setIsRedirecting] = useState(false); // 🔹 NEW
   // Load existing data when component mounts
   useEffect(() => {
     async function loadExistingData() {
@@ -188,6 +188,7 @@ useEffect(() => {
   };
 
   const handleSubmit = async () => {
+    setIsRedirecting(true); // 🔹 show overlay
     setIsSubmitting(true);
 
     try {
@@ -252,7 +253,7 @@ useEffect(() => {
       console.log("Update result:", result);
       
       // Show success message and redirect
-      alert("Data updated successfully!");
+      //alert("Data updated successfully!");
       router.push(`/results/${formData.month}/${formData.year}?region=${formData.region}`); // or wherever you want to redirect
 
     } catch (error) {
@@ -260,6 +261,7 @@ useEffect(() => {
       alert("Failed to update data. Please try again.");
     } finally {
       setIsSubmitting(false);
+      setIsRedirecting(false); // 🔹 hide overlay
     }
   };
   
@@ -276,6 +278,8 @@ useEffect(() => {
   }
 
   return (
+    <>
+    {isRedirecting && <Loading />}   {/* 🔹 overlay when submitting */}
     <div className="max-w-[900px] mx-auto p-8 font-poppins">
       {/* Top bar */}
       <div className="flex justify-between items-center mb-8">
@@ -491,6 +495,7 @@ useEffect(() => {
         </Button>
       </div>
     </div>
+     </>
   );
 };
 

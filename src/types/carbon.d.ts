@@ -11,6 +11,7 @@ export type CarbonActivity = {
   region?: string;
   month: string;
   createdAt: string;
+   
 };
 
 export type CarbonInput = {

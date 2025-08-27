@@ -2,6 +2,7 @@ export interface CarbonGoal {
   id: string;
   companyId: string;
   userId?: string;
+  
   month: string;
   year: string;
   targetElectricity?: number;
@@ -23,6 +24,16 @@ export interface CarbonGoal {
   isMet?: boolean;
   createdAt?: string; // or Date, if you parse it
   updatedAt?: string;
+  // Add these new fields
+  user?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+  };
+  company?: {
+    id: string;
+    name: string;
+  };
 }
 // Add by Htet Htet
 export interface GoalSummaryResponse {

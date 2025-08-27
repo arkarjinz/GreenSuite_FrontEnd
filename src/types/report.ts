@@ -3,6 +3,7 @@ export interface CarbonActivity {
   id: string;
   companyId: string;
   userId: string;
+  username:string;
   month: string;
   year: string;
   activityType: string;
@@ -13,4 +14,5 @@ export interface CarbonActivity {
   fuelType: string;
   disposalMethod: string;
   submittedAt: string; // ISO format
+  
 }
