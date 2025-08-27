@@ -2,6 +2,7 @@ export interface CarbonGoal {
   id: string;
   companyId: string;
   userId?: string;
+  
   month: string;
   year: string;
   targetElectricity?: number;

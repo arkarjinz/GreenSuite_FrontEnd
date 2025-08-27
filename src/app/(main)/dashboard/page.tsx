@@ -49,7 +49,7 @@ export default function DashboardPage() {
                 </div>
 
                 {/* Charts Section - Full width */}
-                <div className="w-full p-4">
+                <div className="w-full p-4 h-full grid md:grid-cols-3 gird-cols-1 gap-4">
                     <ChartToggle />
                 </div>
             </div>

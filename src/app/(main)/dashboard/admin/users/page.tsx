@@ -2,7 +2,7 @@
 
 import { useAuth } from '@/contexts/AuthContext';
 import { useEffect, useState } from 'react';
-import { adminApi } from '@/lib/api';
+import { adminApi } from '@/lib/api/adminApi';
 import { 
     UsersIcon, 
     TrashIcon,

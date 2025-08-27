@@ -52,7 +52,20 @@ const ChartToggle = () => {
   if (!companyId) return;
   const [selectedMonthIndex, setSelectedMonthIndex] = useState<number | null>(null);
   const [pieData, setPieData] = useState<number[]>([0, 0, 0, 0, 0]); // Placeholder
+ const [chartData, setChartData] = useState<any>({
+    datasets: [],
+  });
+  const [chartOptions, setChartOptions] = useState({});
+  const [isLineChart, setIsLineChart] = useState(false);
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
+  const [goalData, setGoalData] = useState<GoalSummaryResponse | null>(null);
 
+  // Generate years from 2020 to current year
+  const currentYear = new Date().getFullYear();
+  const years = Array.from(
+    { length: currentYear - 2019 },
+    (_, i) => 2020 + i
+  );
   const handleChartClick = (event: any, elements: any[]) => {
     if (!elements.length) return;
 
@@ -65,16 +78,7 @@ const ChartToggle = () => {
 
 
 
-  const [chartData, setChartData] = useState<any>({
-    datasets: [],
-  });
-
-
-
-  const [chartOptions, setChartOptions] = useState({});
-  const [isLineChart, setIsLineChart] = useState(false);
-  const [selectedYear, setSelectedYear] = useState("2025"); // ✅ moved outside useEffect
-  const [goalData, setGoalData] = useState<GoalSummaryResponse | null>(null);
+  
 
   const fetchPieBreakdownData = async (month: number) => {
     if (!companyId) return;
@@ -216,17 +220,11 @@ const fetchGoalData = async (month: number) => {
             value={selectedYear}
             onChange={handleYearChange}
           >
-            <option value="2025" >2025</option>
-            <option value="2026" >2026</option>
-            <option value="2027" >2027</option>
-            <option value="2028" >2028</option>
-            <option value="2029" >2029</option>
-            <option value="2030" >2030</option>
-            <option value="2031" >2031</option>
-            <option value="2032" >2032</option>
-            <option value="2033" >2033</option>
-            <option value="2034" >2034</option>
-            <option value="2035" >2035</option>
+            {years.map((year) => (
+              <option key={year} value={String(year)}>
+                {year}
+              </option>
+            ))}
 
           </select>
         </div>
