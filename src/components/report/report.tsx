@@ -166,10 +166,9 @@ const sortActivitiesByDate = (activities: CarbonActivity[]) => {
     january: 1, february: 2, march: 3, april: 4,
     may: 5, june: 6, july: 7, august: 8,
     september: 9, october: 10, november: 11, december: 12,
-    // Add uppercase versions too
-    JANUARY: 1, FEBRUARY: 2, MARCH: 3, APRIL: 4,
-    MAY: 5, JUNE: 6, JULY: 7, AUGUST: 8,
-    SEPTEMBER: 9, OCTOBER: 10, NOVEMBER: 11, DECEMBER: 12
+    "01": 1, "02": 2, "03": 3, "04": 4, "05": 5, "06": 6,
+    "07": 7, "08": 8, "09": 9, "10": 10, "11": 11, "12": 12
+
   };
 
   return [...activities].sort((a, b) => {
@@ -182,8 +181,8 @@ const sortActivitiesByDate = (activities: CarbonActivity[]) => {
     }
     
     // If same year, compare months (convert to lowercase for consistency)
-    const monthA = monthMap[a.month.toLowerCase()] || 0;
-    const monthB = monthMap[b.month.toLowerCase()] || 0;
+    const monthA = monthMap[a.month.toLowerCase()] || monthMap[a.month] || 0;
+    const monthB = monthMap[b.month.toLowerCase()] || monthMap[b.month] || 0;
     
     return monthA - monthB; // Ascending order (earlier months first)
   });
@@ -195,9 +194,7 @@ const sortGoalsByDate = (goals: CarbonGoal[]) => {
     january: 1, february: 2, march: 3, april: 4,
     may: 5, june: 6, july: 7, august: 8,
     september: 9, october: 10, november: 11, december: 12,
-    JANUARY: 1, FEBRUARY: 2, MARCH: 3, APRIL: 4,
-    MAY: 5, JUNE: 6, JULY: 7, AUGUST: 8,
-    SEPTEMBER: 9, OCTOBER: 10, NOVEMBER: 11, DECEMBER: 12,
+    
     // Handle numeric months too (if your goals use "01", "02", etc.)
     "01": 1, "02": 2, "03": 3, "04": 4, "05": 5, "06": 6,
     "07": 7, "08": 8, "09": 9, "10": 10, "11": 11, "12": 12
