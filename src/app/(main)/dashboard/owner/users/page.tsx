@@ -105,7 +105,7 @@ export default function OwnerUsersPage() {
     }
 
     return (
-        <div className="p-4 max-w-6xl mx-auto">
+        <div className="p-4 max-w-6xl mx-auto ">
             <div className="mb-6">
                 <h1 className="text-2xl font-bold text-gray-900">Pending User Approvals</h1>
                 <p className="text-gray-600 mt-1">Review and approve or reject users requesting access to your company</p>

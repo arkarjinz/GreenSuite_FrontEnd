@@ -36,9 +36,7 @@ export default function DashboardPage() {
     }
 
     return (
-        <div className="w-full h-screen" style={{
-            background: "radial-gradient(circle, rgba(87, 199, 133, 1) 0%, rgba(255, 255, 255, 1) 100%)"
-        }}>
+        <div className="w-full h-screen bg-gradient-to-b from-slate-50 to-green-600">
             {/* Main Dashboard Content */}
             <div className="max-w-7xl mx-auto min-h-screen">
                 <div className="mb-8">
