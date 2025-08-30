@@ -367,13 +367,13 @@ const handleSubmit = async () => {
           className="rounded-[25px] border-4 border-[#43a243] outline-none px-5 py-3 text-lg w-full shadow-[inset_0_2px_4px_0_rgba(0,0,0,0.05)]
             hover:shadow-[inset_0_2px_8px_0_rgba(0,0,0,0.1)]"
         >
-          <option value="us">United States (0.82 kg/kWh)</option>
-          <option value="eu">European Union (0.276 kg/kWh)</option>
+          <option value="us">United States (0.384 kg/kWh)</option>
+          <option value="eu">European Union (0.262 kg/kWh)</option>
           <option value="fr">France (0.044 kg/kWh)</option>
-          <option value="de">Germany (0.366kg/kWh)</option>
-          <option value="cn">China (0.681 kg/kWh)</option>
-          <option value="in">India (0.715 kg/kWh)</option>
-          <option value="asia">Other Asia (0.723 kg/kWh)</option>
+          <option value="de">Germany (0.344 kg/kWh)</option>
+          <option value="cn">China (0.560 kg/kWh)</option>
+          <option value="in">India (0.708 kg/kWh)</option>
+          <option value="asia">Other Asia (0.630 kg/kWh)</option>
         </select>
         <p className="text-sm mt-2 text-gray-700 drop-shadow-[0_0.8px_0.8px_rgba(0,0,0,0.1)]">
           Selection impacts electricity emission calculations
