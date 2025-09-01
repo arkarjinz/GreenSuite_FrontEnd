@@ -7,7 +7,7 @@ export default function AuthLayout({
     children: React.ReactNode;
 }) {
     return (
-        <div className="h-screen bg-white relative overflow-hidden flex items-center justify-center">
+        <div className="min-h-screen bg-white relative overflow-hidden">
             {/* Floating Decorative Elements */}
             <div className="absolute inset-0 pointer-events-none">
                 {/* Large floating shapes */}
@@ -35,9 +35,9 @@ export default function AuthLayout({
             </div>
 
             {/* Main Content Container */}
-            <div className="relative z-10 w-full h-full p-4">
+            <div className="relative z-10 w-full p-4">
                 {/* Content without card background */}
-                <div className="relative z-10 h-full">
+                <div className="relative z-10">
                     {children}
                 </div>
                 
