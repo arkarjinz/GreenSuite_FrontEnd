@@ -122,7 +122,23 @@ export default function DashboardPage() {
                             </a>
                         </div>
 
-
+                        <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
+                            <div className="flex items-center mb-4">
+                                <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
+                                    <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                </div>
+                                <h3 className="ml-3 text-lg font-medium text-gray-900">Rejected Users</h3>
+                            </div>
+                            <p className="text-gray-600 mb-4">View and manage rejected user applications</p>
+                            <a href="/dashboard/owner/rejected" className="inline-flex items-center text-red-600 hover:text-red-500">
+                                View
+                                <svg className="ml-1 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                </svg>
+                            </a>
+                        </div>
                     </>
                 )}
             </div>

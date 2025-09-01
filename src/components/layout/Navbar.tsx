@@ -159,7 +159,7 @@ const AuthenticatedNav = ({ user, logout }: { user: AuthUser | null; logout: () 
             {user?.companyRole === 'OWNER' && (
                 <>
                     <NavLink href="/dashboard/owner/users" icon={UsersIcon}>Users</NavLink>
-                    
+                    <NavLink href="/dashboard/owner/rejected" icon={Cog6ToothIcon}>Rejected</NavLink>
                 </>
             )}
             {user?.globalAdmin && (
@@ -230,7 +230,7 @@ const MobileAuthenticatedNav = ({ user, logout, onClose }: { user: AuthUser | nu
                         {user?.companyRole === 'OWNER' && (
                             <>
                                 <MobileNavLink href="/dashboard/owner/users" icon={UsersIcon} onClick={onClose}>Users</MobileNavLink>
-        
+                                <MobileNavLink href="/dashboard/owner/rejected" icon={Cog6ToothIcon} onClick={onClose}>Rejected</MobileNavLink>
                             </>
                         )}
                         {user?.globalAdmin && (
